@@ -1,0 +1,47 @@
+[
+  {
+    "firstName": "Alice",
+    "lastName": "Alice",
+    "password": "password123",
+    "repeatPassword": "password123",
+    "email": "alice.williams@example.com",
+    "admissionYear": 2022,
+    "matricNo": "U2022/555001"
+  },
+  {
+    "firstName": "Bob",
+    "lastName": "Bob",
+    "password": "securePassword99",
+    "repeatPassword": "securePassword99",
+    "email": "bob.jones@example.net",
+    "admissionYear": 2021,
+    "matricNo": "U2021/555002"
+  },
+  {
+    "firstName": "Charlie",
+    "lastName": "Charlie",
+    "password": "charliePass",
+    "repeatPassword": "charliePass",
+    "email": "charlie.brown@example.com",
+    "admissionYear": 2023,
+    "matricNo": "U2023/555003"
+  },
+  {
+    "firstName": "Diana",
+    "lastName": "Diana",
+    "password": "diana12345",
+    "repeatPassword": "diana12345",
+    "email": "diana.miller@example.net",
+    "admissionYear": 2020,
+    "matricNo": "U2020/555004"
+  },
+  {
+    "firstName": "Edward",
+    "lastName": "Edward",
+    "password": "edwardSecure",
+    "repeatPassword": "edwardSecure",
+    "email": "edward.davis@example.com",
+    "admissionYear": 2024,
+    "matricNo": "U2024/555005"
+  }
+]
