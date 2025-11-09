@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { changePassword, login, registerLecturer, registerStudent, resetPassword, verifyOTP } from "./authController.js";
-import { changePasswordSchema, loginSchema, regLecturerSchema, regStudentSchema, resetPasswordSchema, validateInput, verifyOtpSchema, verifyPasswordToken } from "../middlewares/authMiddleware.js";
+import { changePasswordSchema, loginSchema, regLecturerSchema, regStudentSchema, resetPasswordSchema, validateInput, verifyOtpSchema, verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = Router()
 
@@ -9,7 +9,7 @@ router.post('/register/student', validateInput(regStudentSchema), registerStuden
 router.post('/login', validateInput(loginSchema), login)
 router.post('/reset-password', validateInput(resetPasswordSchema), resetPassword)
 router.post('/verify-otp', validateInput(verifyOtpSchema), verifyOTP)
-router.post('/change-password', validateInput(changePasswordSchema), verifyPasswordToken, changePassword)
+router.post('/change-password', validateInput(changePasswordSchema), verifyToken, changePassword)
 
 export default router
 

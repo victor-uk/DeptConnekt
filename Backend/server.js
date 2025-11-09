@@ -1,7 +1,7 @@
 import { createServer } from "http";
 import dotenv from "dotenv";
 import connectDB from "./config/connectDB.js";
-import app from "./app.js";
+import app from "./config/app.js";
 import { initServer } from "./config/connectWebsocket.js";
 dotenv.config()
 

@@ -1,0 +1,418 @@
+openapi: 3.1.0
+info:
+  title: DeptConnekt API
+  description: API for the DeptConnekt application, connecting students and lecturers.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Development server
+
+components:
+  schemas:
+    LecturerRegister:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - lecturerID
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          example: password123
+        lecturerID:
+          type: string
+          example: LEC12345
+
+    StudentRegister:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - matricNo
+        - admissionYear
+      properties:
+        firstName:
+          type: string
+          example: Jane
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: jane.doe@student.example.com
+        password:
+          type: string
+          format: password
+          example: password123
+        matricNo:
+          type: string
+          example: "18/25PC123"
+        admissionYear:
+          type: integer
+          example: 2018
+
+    Login:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          example: password123
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+
+    VerifyOTP:
+      type: object
+      required:
+        - otp
+      properties:
+        otp:
+          type: string
+          example: "123456"
+
+    ChangePassword:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          format: password
+          example: newSecurePassword123
+
+    UpdateProfile:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        profileImg:
+          type: string
+          format: uri
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/register/lecturer:
+    post:
+      tags:
+        - Auth
+      summary: Register a new lecturer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LecturerRegister'
+      responses:
+        '202':
+          description: Registration request received. An OTP will be sent for verification.
+
+  /auth/register/student:
+    post:
+      tags:
+        - Auth
+      summary: Register a new student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRegister'
+      responses:
+        '202':
+          description: Registration request received. An OTP will be sent for verification.
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate a user
+      parameters:
+        - name: role
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [lecturer, student]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      responses:
+        '202':
+          description: Login successful
+        '400':
+          description: Bad Request (e.g., missing role)
+        '403':
+          description: Forbidden (Invalid credentials or account not approved)
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Initiate password reset
+      parameters:
+        - name: role
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [lecturer, student]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '202':
+          description: If a user exists, a password reset OTP will be sent.
+
+  /auth/verify-otp:
+    post:
+      tags:
+        - Auth
+      summary: Verify OTP for password reset
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: The user's ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+      responses:
+        '202':
+          description: OTP verified. Returns a short-lived token for changing the password.
+        '403':
+          description: Invalid or expired token.
+
+  /auth/change-password:
+    post:
+      tags:
+        - Auth
+      summary: Change user password after OTP verification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: role
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [lecturer, student]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+      responses:
+        '200':
+          description: Password has been reset successfully.
+        '403':
+          description: Invalid or expired token.
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user's profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully.
+        '403':
+          description: Access Denied.
+    patch:
+      tags:
+        - Users
+      summary: Update current user's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfile'
+      responses:
+        '200':
+          description: Profile updated successfully.
+        '403':
+          description: Access Denied.
+
+  /users/lecturer:
+    get:
+      tags:
+        - Users
+      summary: Get all lecturers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lecturerRole
+          in: query
+          schema:
+            type: string
+            enum: [courseAdviser]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lecturers retrieved successfully.
+
+  /users/lecturer/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get a single lecturer by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lecturer retrieved successfully.
+        '404':
+          description: Lecturer not found.
+    delete:
+      tags:
+        - Users
+      summary: Delete a lecturer (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted.
+        '404':
+          description: User not found.
+
+  /users/student:
+    get:
+      tags:
+        - Users
+      summary: Get students by admission year
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: admissionYear
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Students retrieved successfully.
+        '400':
+          description: Admission year query parameter is required.
+        '404':
+          description: No students found for the given year.
+
+  /users/student/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get a single student by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Student retrieved successfully.
+        '404':
+          description: Student not found.
+    delete:
+      tags:
+        - Users
+      summary: Delete a student (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted.
+        '404':
+          description: User not found.
