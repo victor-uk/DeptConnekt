@@ -1,9 +1,13 @@
 import { StatusCodes } from 'http-status-codes'
 import { getSchema } from '../helpers/getSchema.js'
-import { BadRequestError, PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
+import {
+  BadRequestError,
+  PermissionDeniedError,
+  ResourceNotFoundError
+} from '../utils/Error.js'
 import LecturerSchema from '../models/LecturerSchema.js'
 import StudentSchema from '../models/StudentSchema.js'
-import pageizer from '../helpers/pageizer.js'
+import paginator from '../helpers/paginator.js'
 
 /**
  * @desc Get profile of the currently logged-in user
@@ -13,7 +17,9 @@ import pageizer from '../helpers/pageizer.js'
 export const getMe = async (req, res) => {
   const { role, id } = req.user
   const schema = getSchema(role)
-  const user = await schema.findOne({ _id: id }).lean()
+  const user = await schema
+    .findOne({ _id: id })
+    .lean()
   if (!user || user.status !== 'approved') {
     throw new PermissionDeniedError('Access Denied')
   }
@@ -37,7 +43,7 @@ export const updateMe = async (req, res) => {
   if (!user || user.status !== 'approved') {
     throw new PermissionDeniedError('Access Denied')
   }
-  user.email = email
+  if (email) user.email = email
   if (profileImg) user.profileImg = profileImg
   await user.save()
   return res.status(StatusCodes.OK).json({
@@ -54,7 +60,7 @@ export const updateMe = async (req, res) => {
  */
 export const updateLecturer = async (req, res) => {
   const { id: userId } = req.params
-  const lecturer = LecturerSchema.findByIdAndUpdate(userId, req.body, {
+  const lecturer = await LecturerSchema.findByIdAndUpdate(userId, req.body, {
     new: true,
     runValidators: true
   })
@@ -73,7 +79,7 @@ export const updateLecturer = async (req, res) => {
  */
 export const updateStudent = async (req, res) => {
   const { id: userId } = req.params
-  const student = StudentSchema.findByIdAndUpdate(userId, req.body, {
+  const student = await StudentSchema.findByIdAndUpdate(userId, req.body, {
     new: true,
     runValidators: true
   })
@@ -128,7 +134,7 @@ export const deleteStudent = async (req, res) => {
  */
 export const getAllLecturers = async (req, res) => {
   const { role: lecturerRole, page, limit } = req.query
-  const { skip, queryLimit } = pageizer(page, limit)
+  const { skip, queryLimit } = paginator(page, limit)
   const filter = {}
   if (lecturerRole === 'courseAdviser') {
     filter.role = 'courseAdviser'
@@ -176,9 +182,16 @@ export const getLecturerById = async (req, res) => {
  */
 export const getStudentsByYear = async (req, res) => {
   const { admissionYear } = req.query
-  if (!admissionYear) throw new BadRequestError('Admission year query parameter is required')
-  const students = await StudentSchema.find({admissionYear}).lean()
-  if (students.length === 0) throw new ResourceNotFoundError(`No students found for admission year ${admissionYear}`)
+  if (!admissionYear)
+    throw new BadRequestError('Admission year query parameter is required')
+  const students = await StudentSchema.find({ admissionYear }).lean()
+  if (students.length === 0) {
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'No student found',
+      data: []
+    })
+  }
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Students gotten',

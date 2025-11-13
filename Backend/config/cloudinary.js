@@ -19,6 +19,15 @@ const storage = new CloudinaryStorage({
   },
 });
 
+const attachmentsStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "deptconnect/attachments",
+    resource_type: "raw",
+  },
+});
 
 
-export { cloudinary, storage };
+
+
+export { cloudinary, storage, attachmentsStorage };

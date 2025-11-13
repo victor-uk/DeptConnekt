@@ -15,16 +15,35 @@ const announcementSchema = new mongoose.Schema(
       trim: true,
     },
 
+    preview: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 150,
+    },
+
     category: {
       type: String,
       enum: ["general", "academic", "event", "alert", "other"],
       default: "general",
     },
 
+    admissionYear: {
+      type: [String],
+      required: true,
+      example: ["2021", "2022"] // metadata; doesnt affect logic,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
       required: true,
+      refPath: "onModel",
+    },
+
+    onModel: {
+      type: String,
+      required: true,
+      enum: ["Lecturer", "Student"],
     },
 
     image: {
@@ -56,6 +75,7 @@ const announcementSchema = new mongoose.Schema(
 
 // TTL index for expired documents
 announcementSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+announcementSchema.index({ })
 
 /**
  * Archive announcement (soft removal)
@@ -66,7 +86,7 @@ announcementSchema.methods.archive = async function () {
 
   // Optionally auto-delete after 6 months
   const sixMonths = 1000 * 60 * 60 * 24 * 30 * 6;
-  this.expiresAt = new Date(Date.now() + sixMonths);
+  this.expiresAt = new Date(this.archivedAt.getTime() + sixMonths);
 
   await this.save();
 };

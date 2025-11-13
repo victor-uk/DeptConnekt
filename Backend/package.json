@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:system-mongo": "cross-env USE_SYSTEM_MONGO=true NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:system-mongo:watch": "cross-env USE_SYSTEM_MONGO=true NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:system-mongo:coverage": "cross-env USE_SYSTEM_MONGO=true NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -11,8 +17,12 @@
   "type": "module",
   "description": "",
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",
-    "nodemon": "^3.1.10"
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.1.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

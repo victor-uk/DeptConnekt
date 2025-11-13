@@ -1,9 +1,20 @@
 import joi from 'joi'
 import { checkYearIsValid } from '../helpers/checkValidYear.js'
-import { BadRequestError, PermissionDeniedError } from '../utils/Error.js'
+import { BadRequestError, PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
 import jwt from 'jsonwebtoken'
+import AnnouncementSchema from '../models/AnnouncementSchema.js'
+import { validateUrl } from '../helpers/urlValidator.js'
+import AssignmentSchema from '../models/AssignmentSchema.js'
+export const resourceModel = {
+  announcement: AnnouncementSchema,
+  assignment: AssignmentSchema
+}
 
-
+/**
+ * *********************************************
+ * Authentication Middleware
+ * *********************************************
+ */
 // input validation for registerLecturer
 export const regLecturerSchema = joi.object({
   firstName: joi.string().min(3).max(20).required(),
@@ -58,19 +69,25 @@ export const regStudentSchema = regLecturerSchema.keys({
     password: joi.string().pattern(new RegExp('^[a-zA-Z0-9]{6,20}$')).required()
 })
 
+
+/**
+ * *********************************************
+ * User Middleware
+ * *********************************************
+ */
 export const updateMeSchema = joi.object({
   email: joi
     .string()
-    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } }),
-  image: joi
-  .string()
-  .optional()
-  .custom((value, helpers) => {
-      const allowedHosts = ['res.cloudinary.com', 'cdn.yourapp.com']
-      const imageUrl = new URL(value)
-      if (!allowedHosts.includes(imageUrl.hostname) && !imageUrl.pathname.match(/\.(jpg|jpeg|png|webp)$/i)) {
+    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
+    .optional(),
+  profileImg: joi
+    .string()
+    .optional()
+    .custom((value, helpers) => {
+      if (!validateUrl(value)) {
         return helpers.message('Invalid image URL')
       }
+      return value
     })
 })
 
@@ -106,9 +123,110 @@ export const studentUpdateSchema = joi.object({
   status: joi.string().valid('pending', 'approved', 'rejected').optional(),
 });
 
+/**
+ * *********************************************
+ * Announcement Middleware
+ * *********************************************
+ */
+export const announcementSchema = joi.object({
+  title: joi.string().trim().required().min(3).max(150),
+  body: joi.string().trim().required().min(3).max(500),
+  category: joi.string().valid('general', 'academic', 'event', 'alert', 'other').required(),
+  image: joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid image URL')
+    }
+  }).optional(),
+  admissionYear: joi
+    .number()
+    .integer()
+    .custom((value, helpers) => {
+      // custom validator to validate admissionYear
+      if (!checkYearIsValid(value)) {
+        return helpers.message(`Admission year ${value} is not valid`)
+      }
+      return value
+    })
+    .required(),
+  attachments: joi.array().items(joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid attachment URL')
+    }
+  })).optional()
+});
+
+export const updateAnnouncementSchema = joi.object({
+  title: joi.string().trim().min(3).max(150),
+  body: joi.string().trim().min(3).max(500),
+  category: joi.string().valid('general', 'academic', 'event', 'alert', 'other'),
+  image: joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid image URL')
+    }
+  }).optional(),
+  attachments: joi.array().items(joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid attachment URL')
+    }
+  })).optional()
+});
+
+/**
+ * *********************************************
+ * Assignment Middleware
+ * *********************************************
+ */
+export const createAssignmentSchema = joi.object({
+  title: joi.string().trim().required().min(3).max(150),
+  description: joi.string().trim().required().min(10),
+  deadline: joi.date().iso().required(),
+  admissionYear: joi.array().items(joi.string()).required(),
+  image: joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid image URL');
+    }
+    return value;
+  }).optional(),
+  attachments: joi.array().items(joi.object({
+    fileName: joi.string().required(),
+    fileUrl: joi.string().custom((value, helpers) => {
+      if (!validateUrl(value)) {
+        return helpers.message('Invalid attachment URL');
+      }
+      return value;
+    }).required(),
+    fileType: joi.string(),
+    size: joi.number()
+  })).optional()
+});
+
+export const updateAssignmentSchema = joi.object({
+  title: joi.string().trim().min(3).max(150).optional(),
+  description: joi.string().trim().min(10).optional(),
+  deadline: joi.date().iso().optional(),
+  admissionYear: joi.array().items(joi.string()).optional(),
+  image: joi.string().custom((value, helpers) => {
+    if (!validateUrl(value)) {
+      return helpers.message('Invalid image URL');
+    }
+    return value;
+  }).optional()
+});
+
+/**
+ * *********************************************
+ * Token Middleware
+ * *********************************************
+ */
 export const verifyToken = async (req, res, next) => {
-  const token = req.headers.authorization.split(' ')[1]
   try {
+    if (!req.headers.authorization) {
+      return res.status(401).json({ message: 'Authorization header required' })
+    }
+    const token = req.headers.authorization.split(' ')[1]
+    if (!token) {
+      return res.status(401).json({ message: 'Token required' })
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     req.user = decoded
     next()
@@ -123,6 +241,11 @@ export const verifyToken = async (req, res, next) => {
   }
 }
 
+/**
+ * *********************************************
+ * Input Validation Middleware
+ * *********************************************
+ */
 export const validateInput = schema => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body)
@@ -133,16 +256,25 @@ export const validateInput = schema => {
   }
 }
 
-export const authoriseRoles = (own = false, ...roles) => {
-  return (req, res, next) => {
-    // check if the params includes the user role
-    const { role } = req.user
-    if (!roles.includes(role)) {
-      throw new PermissionDeniedError('Access denied')
-    }
-    next()
-  }
-}
 
-// let's say a lecturer tries to delete a post that he didn't make
-// the system from 
+/**
+ * *********************************************
+ * Authorization Middleware
+ * *********************************************
+ */
+export const authoriseRoles = ({ resourceName = "", own = false, roles = [] }) => {
+  return async (req, res, next) => {
+    const { role, id } = req.user;
+
+    if (own) {
+      const resource = await resourceModel[resourceName].findById(req.params.id);
+      if (!resource) throw new ResourceNotFoundError("Resource not found");
+      if (resource.createdBy.toString() !== id || !roles.includes(role)) {
+        throw new PermissionDeniedError("Access denied");
+      }
+      return next();
+    }
+    if (!roles.includes(role)) throw new PermissionDeniedError("Access denied");
+    next();
+  };
+};

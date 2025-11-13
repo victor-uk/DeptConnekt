@@ -1,6 +1,7 @@
 import multer from "multer";
-import { storage } from "../config/cloudinary.js";
+import { attachmentsStorage, storage } from "../config/cloudinary.js";
 
 const parser = multer({ storage: storage})
+const attachmentParser = multer({storage: attachmentsStorage})
 
-export default parser
+export { parser, attachmentParser }

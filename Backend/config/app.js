@@ -5,6 +5,7 @@ import { errorHandler, notFound } from "../middlewares/errorHandler.js";
 import helmet from "helmet";
 import authRoutes from "../Auth/AuthRoutes.js"
 import userRoutes from "../Users/userRoutes.js"
+import announcementRoutes from "../Announcement/AnnouncementRoutes.js"
 import mongoSanitise from 'express-mongo-sanitize'
 import swaggerUi from 'swagger-ui-express'
 import YAML from 'yamljs'
@@ -45,6 +46,7 @@ app.get("/", (req, res) => {
 })
 app.use("/api/v1", authRoutes)
 app.use("/api/v1", userRoutes)
+app.use("/api/v1", announcementRoutes)
 
 //exceptiion handlers
 app.use(notFound)
