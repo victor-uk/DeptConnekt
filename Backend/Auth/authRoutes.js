@@ -36,9 +36,9 @@ router.post(
   validateInput(resetPasswordSchema),
   resetPassword
 )
-router.post('/verify-otp', validateInput(verifyOtpSchema), verifyOTP)
+router.post('/verify-otp/:id', validateInput(verifyOtpSchema), verifyOTP)
 router.post(
-  '/change-password',
+  '/change-password/:id',
   validateInput(changePasswordSchema),
   verifyToken,
   changePassword

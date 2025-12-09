@@ -9,6 +9,7 @@ import {
 } from '../helpers/testHelpers.js'
 import AnnouncementSchema from '../../models/AnnouncementSchema.js'
 import mongoose from 'mongoose'
+import { generatePreview } from '../../helpers/generatePreview.js'
 
 describe('Announcement Routes', () => {
   let lecturer, student, adminToken, lecturerToken, studentToken
@@ -24,17 +25,19 @@ describe('Announcement Routes', () => {
   beforeEach(async () => {
     await clearDB()
     lecturer = await createTestLecturer({ status: 'approved' })
-    student = await createTestStudent({ status: 'approved' })
-    adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
-    lecturerToken = generateTestToken(lecturer._id.toString(), 'lecturer')
-    studentToken = generateTestToken(student._id.toString(), 'student')
+    student = await createTestStudent({ status: 'approved', admissionYear: 2021 })
+    adminToken = generateTestToken(new mongoose.Types.ObjectId(), 'admin')
+    lecturerToken = generateTestToken(lecturer._id, 'lecturer')
+    studentToken = generateTestToken(student._id, 'student')
   })
 
   it('should create announcement as lecturer', async () => {
     const announcementData = {
       title: 'Test Announcement',
       body: 'This is a test announcement body with enough content',
-      category: 'general'
+      category: 'general',
+      preview: generatePreview('This is a test announcement body with enough content'),
+      admissionYear: 2021
     }
 
     const response = await request(app)
@@ -79,34 +82,68 @@ describe('Announcement Routes', () => {
       body: 'First announcement body',
       preview: 'First announcement body',
       category: 'general',
+      admissionYear: 2023,
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
-
+    
     const response = await request(app)
       .get('/api/v1/announcements')
-      .set(getAuthHeader(studentToken))
+      .set(getAuthHeader(lecturerToken)) 
 
     expect(response.status).toBe(200)
     expect(response.body.data.length).toBeGreaterThan(0)
   })
 
   it('should filter announcements by category', async () => {
-    await AnnouncementSchema.create({
+    const announcement = await AnnouncementSchema.create({
       title: 'Academic Announcement',
       body: 'Body',
       preview: 'Body',
       category: 'academic',
+      admissionYear: 2021, 
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
       .get('/api/v1/announcements?category=academic')
       .set(getAuthHeader(studentToken))
-
+      
     expect(response.status).toBe(200)
     expect(response.body.data[0].category).toBe('academic')
+  })
+
+  it('should restrict a student to fetching announcements for their own admission year only', async () => {
+    // Announcement for the student's year
+    await AnnouncementSchema.create({
+      title: 'Announcement for 2021',
+      body: 'Body for 2021',
+      preview: 'Body for 2021',
+      category: 'academic',
+      admissionYear: ['2021'],
+      createdBy: lecturer._id,
+      createdByModel: 'Lecturer'
+    })
+    // Announcement for a different year
+    await AnnouncementSchema.create({
+      title: 'Announcement for 2022',
+      body: 'Body for 2022',
+      preview: 'Body for 2022',
+      category: 'academic',
+      admissionYear: ['2022'],
+      createdBy: lecturer._id,
+      createdByModel: 'Lecturer'
+    })
+
+    // Student from 2021 attempts to fetch announcements, even trying to query for another year
+    const response = await request(app)
+      .get('/api/v1/announcements?admissionYear=2022')
+      .set(getAuthHeader(studentToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.data).toHaveLength(1)
+    expect(response.body.data[0].title).toBe('Announcement for 2021')
   })
 
   it('should get announcement by ID', async () => {
@@ -116,7 +153,7 @@ describe('Announcement Routes', () => {
       preview: 'Test body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -141,9 +178,10 @@ describe('Announcement Routes', () => {
       title: 'Original Title',
       body: 'Original body',
       preview: 'Original body',
+      admissionYear: 2023,
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -162,7 +200,7 @@ describe('Announcement Routes', () => {
       preview: 'Original body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -184,7 +222,7 @@ describe('Announcement Routes', () => {
       preview: 'Original body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -202,7 +240,7 @@ describe('Announcement Routes', () => {
       preview: 'Body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -221,7 +259,7 @@ describe('Announcement Routes', () => {
       preview: 'Body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer'
+      createdByModel: 'Lecturer'
     })
 
     const response = await request(app)
@@ -240,8 +278,8 @@ describe('Announcement Routes', () => {
       preview: 'Body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer',
-      isArchived: false
+      createdByModel: 'Lecturer',
+      archived: false
     })
 
     const response = await request(app)
@@ -249,7 +287,7 @@ describe('Announcement Routes', () => {
       .set(getAuthHeader(lecturerToken))
 
     expect(response.status).toBe(200)
-    expect(response.body.data.isArchived).toBe(true)
+    expect(response.body.data.archived).toBe(true)
   })
 
   it('should unarchive announcement', async () => {
@@ -259,8 +297,8 @@ describe('Announcement Routes', () => {
       preview: 'Body',
       category: 'general',
       createdBy: lecturer._id,
-      onModel: 'Lecturer',
-      isArchived: true,
+      createdByModel: 'Lecturer',
+      archived: true,
       archivedAt: new Date()
     })
 
@@ -269,6 +307,6 @@ describe('Announcement Routes', () => {
       .set(getAuthHeader(lecturerToken))
 
     expect(response.status).toBe(200)
-    expect(response.body.data.isArchived).toBe(false)
+    expect(response.body.data.archived).toBe(false)
   })
 })

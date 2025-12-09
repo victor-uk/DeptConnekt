@@ -1,8 +1,11 @@
-import paginator from "../helpers/paginator"
-import { generatePreview } from "../helpers/generatePreview"
-import AssignmentSchema from "../models/AssignmentSchema"
+import paginator from "../helpers/paginator.js"
+import { generatePreview } from "../helpers/generatePreview.js"
+import AssignmentSchema from "../models/AssignmentSchema.js"
 import { StatusCodes } from "http-status-codes";
-import { ResourceNotFoundError } from "../utils/Error.js";
+import { PermissionDeniedError, ResourceNotFoundError } from "../utils/Error.js";
+import { getSchema } from "../helpers/getSchema.js";
+import { buildFilter } from '../helpers/filterHelper.js'
+
 
 export const createAssignment = async (req, res) => {
   const { title, description, deadline, image, attachments, admissionYear } =
@@ -34,13 +37,24 @@ export const createAssignment = async (req, res) => {
 }
 
 export const getAssignments = async (req, res) => {
-  const { page, limit, title, createdBy, timeRemaining, admissionYear } = req.query
+  const { page, limit, admissionYear, title } = req.query
+  const { role, id } = req.user
   const { skip, queryLimit } = paginator(page, limit)
-  const filter = {}
-  if (title) filter.title = { $regex: title, $options: 'i' }
-  if (createdBy) filter.createdBy = createdBy
-  if (timeRemaining) filter.timeRemaining = timeRemaining
-  if (admissionYear) filter.admissionYear = admissionYear
+  console.log(skip, queryLimit);
+  
+  const schema = getSchema(role)
+  const user = await schema.findById(id)
+  const filter = buildFilter(req.query, ["title"])
+
+  if (role === "lecturer" || role === "courseAdviser") {
+    filter.createdBy = id
+  }
+  // prevents students from acessing other level's resouces
+  if (user.admissionYear) {
+  filter.admissionYear = user.admissionYear
+}
+console.log(filter);
+
   const assignments = await AssignmentSchema.find(filter)
     .skip(skip)
     .limit(queryLimit)
@@ -113,8 +127,10 @@ export const deleteAssignment = async (req, res) => {
 }
 
 export const archiveAssignment = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params
+  
   const assignment = await AssignmentSchema.findById(id);
+  
   if (!assignment) throw new ResourceNotFoundError('Assignment not found');
   await assignment.archive();
   res.status(StatusCodes.OK).json({ success: true, message: 'Assignment archived', data: assignment });

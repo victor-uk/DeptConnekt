@@ -2,7 +2,10 @@ import { StatusCodes } from 'http-status-codes'
 import AnnouncementSchema from '../models/AnnouncementSchema.js'
 import { generatePreview } from '../helpers/generatePreview.js'
 import paginator from '../helpers/paginator.js'
-import { ResourceNotFoundError } from '../utils/Error.js'
+import { PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
+import { buildFilter } from '../helpers/filterHelper.js'
+import { getSchema } from '../helpers/getSchema.js'
+import mongoose from 'mongoose'
 
 /**
  * @desc Create a new announcement
@@ -26,7 +29,7 @@ export const createAnnouncement = async (req, res) => {
     category,
     admissionYear,
     createdBy: id,
-    onModel: userModel // createdBy refs onModel through ref path
+    createdByModel: userModel // createdBy refs createdByModel through ref path
   })
   announcement = await AnnouncementSchema.findById(announcement._id).populate('createdBy', 'fullName _id')
   res.status(StatusCodes.CREATED).json({
@@ -40,19 +43,21 @@ export const createAnnouncement = async (req, res) => {
  * @desc 
  */
 export const getAnnouncements = async (req, res) => {
-  const { title, createdBy, category, admissionYear, timeline, page, limit } = req.query
+  const { timeline, page, limit } = req.query
   const { skip, queryLimit } = paginator(page, limit)
-  const filter = {}
-  if (title) {
-    filter.title = { $regex: title, $options: 'i' }
+  const { role, id } = req.user
+  const schema = getSchema(role)
+  
+  const user = await schema.findById(id).lean() 
+  // console.log(user, id, role);
+  
+  // Use the reusable filter builder
+  const filter = buildFilter(req.query, ['title', 'category'])
+
+  // prevents students from acessing other level's resouces
+  if (user.admissionYear) {
+    filter.admissionYear = user.admissionYear
   }
-  if (createdBy) {
-    filter.createdBy = createdBy
-  }
-  if (category) {
-    filter.category = category
-  }
-  if (admissionYear) filter.admissionYear = admissionYear
   if (timeline) {
     const timelineMs = timeline * 24 * 60 * 60 * 1000
     filter.createdAt = { $gte: new Date(Date.now() - timelineMs) }
@@ -64,7 +69,7 @@ export const getAnnouncements = async (req, res) => {
     .limit(queryLimit)
     .populate('createdBy', 'fullName id')
     .lean()
-
+  
   if (announcements.length === 0) {
     return res.status(StatusCodes.OK).json({
       success: true,

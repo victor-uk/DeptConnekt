@@ -29,18 +29,18 @@ const announcementSchema = new mongoose.Schema(
     },
 
     admissionYear: {
-      type: [String],
+      type: [Number],
       required: true,
-      example: ["2021", "2022"] // metadata; doesnt affect logic,
+      example: [2021, 2022] // metadata; doesnt affect logic,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      refPath: "onModel",
+      refPath: "createdByModel",
     },
 
-    onModel: {
+    createdByModel: {
       type: String,
       required: true,
       enum: ["Lecturer", "Student"],
@@ -59,7 +59,7 @@ const announcementSchema = new mongoose.Schema(
     ],
 
     // === Lifecycle management ===
-    isArchived: {
+    archived: {
       type: Boolean,
       default: false,
     },
@@ -81,7 +81,7 @@ announcementSchema.index({ })
  * Archive announcement (soft removal)
  */
 announcementSchema.methods.archive = async function () {
-  this.isArchived = true;
+  this.archived = true;
   this.archivedAt = new Date();
 
   // Optionally auto-delete after 6 months
@@ -95,7 +95,7 @@ announcementSchema.methods.archive = async function () {
  * Unarchive announcement (restore)
  */
 announcementSchema.methods.unarchive = async function () {
-  this.isArchived = false;
+  this.archived = false;
   this.archivedAt = null;
   this.expiresAt = null; // clear TTL so Mongo doesn't auto-delete it
   await this.save();

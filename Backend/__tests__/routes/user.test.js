@@ -20,7 +20,7 @@ describe('User Routes', () => {
     await closeDB()
   })
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await clearDB()
   })
 
@@ -209,5 +209,55 @@ describe('User Routes', () => {
     expect(response.status).toBe(200)
     const deletedStudent = await StudentSchema.findById(student._id)
     expect(deletedStudent).toBeNull()
+  })
+
+  it('should reject update as student', async () => {
+    const lecturer = await createTestLecturer()
+    const student = await createTestStudent({ status: 'approved' })
+    const studentToken = generateTestToken(student._id.toString(), 'student')
+
+    const response = await request(app)
+      .put(`/api/v1/lecturers/${lecturer._id}`)
+      .set(getAuthHeader(studentToken))
+      .send({ firstName: 'Student Update' })
+
+    expect(response.status).toBe(403)
+  })
+
+  it('should reject delete by student', async () => {
+    const lecturer = await createTestLecturer()
+    const student = await createTestStudent({ status: 'approved' })
+    const studentToken = generateTestToken(student._id.toString(), 'student')
+
+    const response = await request(app)
+      .delete(`/api/v1/lecturers/${lecturer._id}`)
+      .set(getAuthHeader(studentToken))
+
+    expect(response.status).toBe(403)
+  })
+
+  it('should reject update as lecturer', async () => {
+    const studentToUpdate = await createTestStudent()
+    const lecturer = await createTestLecturer({ status: 'approved' })
+    const lecturerToken = generateTestToken(lecturer._id.toString(), 'lecturer')
+
+    const response = await request(app)
+      .put(`/api/v1/students/${studentToUpdate._id}`)
+      .set(getAuthHeader(lecturerToken))
+      .send({ firstName: 'Lecturer Update' })
+
+    expect(response.status).toBe(403)
+  })
+
+  it('should reject delete by lecturer', async () => {
+    const studentToDelete = await createTestStudent()
+    const lecturer = await createTestLecturer({ status: 'approved' })
+    const lecturerToken = generateTestToken(lecturer._id.toString(), 'lecturer')
+
+    const response = await request(app)
+      .delete(`/api/v1/students/${studentToDelete._id}`)
+      .set(getAuthHeader(lecturerToken))
+
+    expect(response.status).toBe(403)
   })
 })

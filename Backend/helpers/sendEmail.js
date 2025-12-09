@@ -25,5 +25,11 @@ export const emailConfirmationHelper = async id => {
     token: otp,
     expiresAt: expiryDate
   })
-  await transport.sendMail(mailOptions)
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.log(err.message); // Human-readable message
+    console.log(err.code);    // e.g., 'ECONNECTION', 'EAUTH'
+    console.log(err.response); // SMTP server response
+  }
 }

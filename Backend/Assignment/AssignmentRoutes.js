@@ -29,7 +29,7 @@ router
     validateInput(createAssignmentSchema),
     createAssignment
   )
-  .get(authoriseRoles({ own: true, resourceName: "assignment", roles: ["admin", "studentAdmin", "student"] }), getAssignments);
+  .get(authoriseRoles({ roles: ["admin", "studentAdmin", "student", "lecturer", "courseAdviser"] }), getAssignments);
 
 router
   .route("/assignments/:id")

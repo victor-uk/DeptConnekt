@@ -6,6 +6,10 @@ import helmet from "helmet";
 import authRoutes from "../Auth/AuthRoutes.js"
 import userRoutes from "../Users/userRoutes.js"
 import announcementRoutes from "../Announcement/AnnouncementRoutes.js"
+import assignmentRoutes from "../Assignment/AssignmentRoutes.js"
+import eventRoutes from "../Event/EventRoutes.js"
+import timetableRoutes from "../Timetable/TimetableRoutes.js"
+import { timeoutMiddleware, haltOnTimedout } from '../middlewares/timeoutMiddleware.js';
 import mongoSanitise from 'express-mongo-sanitize'
 import swaggerUi from 'swagger-ui-express'
 import YAML from 'yamljs'
@@ -39,14 +43,21 @@ app.use((req, res, next) => {
     mongoSanitise.sanitize(req.params);
     next();
   })
+app.use(timeoutMiddleware);
 
 // Routes
 app.get("/", (req, res) => {
     res.send("DeptConnekt is loading")
 })
-app.use("/api/v1", authRoutes)
+app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1", userRoutes)
 app.use("/api/v1", announcementRoutes)
+app.use("/api/v1", assignmentRoutes)
+app.use("/api/v1", eventRoutes)
+app.use("/api/v1", timetableRoutes)
+
+
+app.use(haltOnTimedout)
 
 //exceptiion handlers
 app.use(notFound)

@@ -6,8 +6,6 @@ import LecturerSchema from '../models/LecturerSchema.js'
 import { emailConfirmationHelper } from '../helpers/sendEmail.js'
 import TokenSchema from '../models/TokenSchema.js'
 import jwt from 'jsonwebtoken'
-// import { getRandomBetween } from '../utils/generateRandMilli.js'
-// import { sleep } from '../helpers/sleep.js'
 
 /**
  * @desc Register a new lecturer
@@ -20,25 +18,22 @@ export const registerLecturer = async (req, res) => {
   if (lecturerExists) {
     // to simulate a network delay so that hackers wont be able to detect an existing email
     await fetch('https://httpbin.org/delay/5').then(r => r.json())
-    res.status(StatusCodes.ACCEPTED).json({
-      success: true,
-      message: 'Registration request received. If your email is valid, you will receive an OTP.',
-      data: {}
+  } else {
+    const lecturer = new LecturerSchema({
+      firstName,
+      lastName,
+      email,
+      password,
+      lecturerID
     })
+    await emailConfirmationHelper(lecturer._id.toString())
+    await lecturer.save()
   }
-  const lecturer = new LecturerSchema({
-    firstName,
-    lastName,
-    email,
-    password,
-    lecturerID
-  })
 
-  await emailConfirmationHelper(lecturer.id)
-  await lecturer.save()
   return res.status(StatusCodes.ACCEPTED).json({
     success: true,
-    message: 'Registration request received. If your email is valid, you will receive an OTP.',
+    message:
+      'Registration request received. If your email is valid, you will receive an OTP.',
     data: {}
   })
 }
@@ -54,25 +49,23 @@ export const registerStudent = async (req, res) => {
   const studentExists = await StudentSchema.findOne({ email }).lean()
   if (studentExists) {
     await fetch('https://httpbin.org/delay/5').then(r => r.json())
-    res.status(StatusCodes.ACCEPTED).json({
-      success: true,
-      message: 'Registration request received. If your email is valid, you will receive an OTP.',
-      data: {}
+  } else {
+    const student = new StudentSchema({
+      firstName,
+      lastName,
+      email,
+      password,
+      admissionYear,
+      matricNo
     })
+    await emailConfirmationHelper(student.id)
+    await student.save()
   }
-  const student = new StudentSchema({
-    firstName,
-    lastName,
-    email,
-    password,
-    admissionYear,
-    matricNo
-  })
-  await emailConfirmationHelper(student.id)
-  await student.save()
+
   return res.status(StatusCodes.ACCEPTED).json({
     success: true,
-    message: 'Registration request received. If your email is valid, you will receive an OTP.',
+    message:
+      'Registration request received. If your email is valid, you will receive an OTP.',
     data: {}
   })
 }
@@ -86,9 +79,11 @@ export const login = async (req, res) => {
   const { email, password } = req.body
   const { role } = req.query
   if (!role || !['lecturer', 'student'].includes(role)) {
-    throw new BadRequestError('A valid role (lecturer or student) is required as a query parameter.')
+    throw new PermissionDeniedError(
+      'A valid role (lecturer or student) is required as a query parameter.'
+    )
   }
-  const schema = role === 'lecturer' ? LecturerSchema : StudentSchema
+  const schema = role === 'lecturer' || role === 'courseAdviser' ? LecturerSchema : StudentSchema
   // check whether user exists. If it does,  compare password
   const user = await schema.findOne({ email }).select('lastName password role')
 
@@ -100,7 +95,7 @@ export const login = async (req, res) => {
   if (!isMatch) {
     throw new BadRequestError('Invalid email or password')
   }
-  const token = await generateJwt(user.id, user.role)
+  const token = await generateJwt(user._id, user.role)
   res.status(StatusCodes.ACCEPTED).json({
     success: true,
     message: 'Login successful',
@@ -117,23 +112,22 @@ export const resetPassword = async (req, res) => {
   const { email } = req.body
   const { role } = req.query
   if (!role || !['lecturer', 'student'].includes(role)) {
-    throw new BadRequestError('A valid role (lecturer or student) is required as a query parameter.')
+    throw new BadRequestError(
+      'A valid role (lecturer or student) is required as a query parameter.'
+    )
   }
   const schema = role === 'lecturer' ? LecturerSchema : StudentSchema
   const user = await schema.findOne({ email }).lean()
   if (!user) {
     await fetch('https://httpbin.org/delay/5').then(r => r.json())
-    return res.status(StatusCodes.ACCEPTED).json({
-      success: true,
-      message: 'If a user with that email exists, a password reset OTP will be sent.',
-      data: {}
-    })
+  } else {
+    await emailConfirmationHelper(user._id)
   }
-  
-  await emailConfirmationHelper(user._id)
+
   return res.status(StatusCodes.ACCEPTED).json({
     success: true,
-    message: 'If a user with that email exists, a password reset OTP will be sent.',
+    message:
+      'If a user with that email exists, a password reset OTP will be sent.',
     data: {}
   })
 }
@@ -149,28 +143,34 @@ export const verifyOTP = async (req, res) => {
   // note user id will be gooten from req.query
   // compare the tokens
   const { otp } = req.body
-  const { id } = req.query
+  const { id } = req.params
   if (!id) {
     throw new BadRequestError('User ID is required as a query parameter.')
   }
   const token = await TokenSchema.findOne({ userId: id })
 
   if (!token || token.used === true) {
-    throw new PermissionDeniedError('Token is invalid')
+    throw new PermissionDeniedError('Token is either invalid or already used')
   }
   const isMatch = await token.compareToken(otp)
-  
+
   if (!isMatch) {
-    throw new PermissionDeniedError('Token doesn\'t match')
+    throw new PermissionDeniedError("Token doesn't match")
   }
   // Mark token as used to prevent reuse
-  token.used = true;
-  await token.save();
+  token.used = true
+  await token.save()
 
-  const jwtToken = jwt.sign({id: id, tokenUser: token.userId.toString()}, process.env.JWT_SECRET, { expiresIn: '10m' })
-  return res
-    .status(StatusCodes.ACCEPTED)
-    .json({ success: true, message: 'OTP verified successfully', data: {token: jwtToken} })
+  const jwtToken = jwt.sign(
+    { id: id, tokenUser: token.userId.toString() },
+    process.env.JWT_SECRET,
+    { expiresIn: '10m' }
+  )
+  return res.status(StatusCodes.ACCEPTED).json({
+    success: true,
+    message: 'OTP verified successfully',
+    data: { token: jwtToken }
+  })
 }
 
 /**
@@ -179,20 +179,27 @@ export const verifyOTP = async (req, res) => {
  * @access Private (Requires short-lived token from OTP verification)
  */
 export const changePassword = async (req, res) => {
-  const { id, role } = req.query
+  const { role } = req.query
+  const { id } = req.params
   const { password } = req.body
   const { tokenUser } = req.user
 
   if (!role || !['lecturer', 'student'].includes(role)) {
-    throw new BadRequestError('A valid role (lecturer or student) is required as a query parameter.')
+    throw new BadRequestError(
+      'A valid role (lecturer or student) is required as a query parameter.'
+    )
   }
   const schema = role === 'lecturer' ? LecturerSchema : StudentSchema
-  
+
   if (id != tokenUser) {
-    throw new PermissionDeniedError("Invalid token")
+    throw new PermissionDeniedError('Invalid token')
   }
   const user = await schema.findOne({ _id: id }).select('password')
   user.password = password
   await user.save()
-  return res.status(StatusCodes.OK).json({success: true, message: "Password has been reset successfully", data: {}})
+  return res.status(StatusCodes.OK).json({
+    success: true,
+    message: 'Password has been reset successfully',
+    data: {}
+  })
 }

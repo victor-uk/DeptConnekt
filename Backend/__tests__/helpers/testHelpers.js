@@ -48,7 +48,7 @@ export const createTestStudent = async (overrides = {}) => {
     email: `student${Date.now()}@test.com`,
     password: 'password123',
     matricNo: `MAT${Date.now()}`,
-    admissionYear: 2020,
+    admissionYear: 2023,
     role: 'student',
     status: 'approved',
     ...overrides
