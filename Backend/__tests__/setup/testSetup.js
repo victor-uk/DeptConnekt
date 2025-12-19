@@ -12,7 +12,7 @@ let mongoServer
 export const connectDB = async () => {
   // Check if we should use system MongoDB instead of Memory Server
   const useSystemMongo = process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST
-  
+
   if (useSystemMongo) {
     // Use system MongoDB or test URI from environment
     const testMongoUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI_DEV || 'mongodb://localhost:27017/jest-test-db'
@@ -40,10 +40,12 @@ export const connectDB = async () => {
     // Fallback: Use a test MongoDB URI from environment or local connection
     console.warn('MongoDB Memory Server failed to start, using fallback connection:', error.message)
     console.warn('To avoid this, set USE_SYSTEM_MONGO=true or MONGO_URI_TEST in your environment')
-    
+
     // Try using a test database URI from environment
-    const testMongoUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI_DEV || 'mongodb://localhost:27017/jest-test-db'
-    
+    const workerId = process.env.JEST_WORKER_ID || '1';
+    const baseUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI_DEV || 'mongodb://localhost:27017/jest-test-db';
+    const testMongoUri = `${baseUri}-${workerId}`;
+
     try {
       await mongoose.connect(testMongoUri)
       console.log('Connected to test database:', testMongoUri)
@@ -92,14 +94,14 @@ export const clearDB = async () => {
   }
 
   const useSystemMongo = process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST
-  
+
   if (useSystemMongo) {
     // Drop entire database - faster and more reliable than dropping collections
     await db.dropDatabase()
-    
+
     // Wait a moment to ensure drop is complete
     await new Promise(resolve => setTimeout(resolve, 50))
-    
+
     // MongoDB will automatically recreate the database and collections
     // when models are used next, with indexes properly set up
     return
@@ -111,7 +113,7 @@ export const clearDB = async () => {
     collections
       .map(collection => collection.name)
       .filter(name => !name.startsWith('system.'))
-      .map(collectionName => 
+      .map(collectionName =>
         db.collection(collectionName).deleteMany({})
       )
   )
