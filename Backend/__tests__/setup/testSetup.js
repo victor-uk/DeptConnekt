@@ -82,10 +82,26 @@ export const closeDB = async () => {
  * Clear all test data from database
  */
 export const clearDB = async () => {
-  const collections = mongoose.connection.collections
-  for (const key in collections) {
-    const collection = collections[key]
-    await collection.deleteMany({})
+  if (mongoose.connection.readyState === 0) {
+    return // Not connected
   }
+
+  const db = mongoose.connection.db
+  if (!db) {
+    return
+  }
+
+  // Get all collection names from the database directly
+  const collections = await db.listCollections().toArray()
+  
+  // Delete all documents from each collection
+  await Promise.all(
+    collections
+      .map(collection => collection.name)
+      .filter(name => !name.startsWith('system.')) // Skip system collections
+      .map(collectionName => 
+        db.collection(collectionName).deleteMany({})
+      )
+  )
 }
 
