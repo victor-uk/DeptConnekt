@@ -18,7 +18,7 @@ export const createEvent = async (req, res) => {
     ...req.body,
     preview,
     createdBy: id,
-    onModel: userModel,
+    createdByModel: userModel,
   });
 
   const populated = await event.populate("createdBy", "fullName");
