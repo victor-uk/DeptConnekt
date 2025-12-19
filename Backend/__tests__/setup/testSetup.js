@@ -66,7 +66,10 @@ export const connectDB = async () => {
  */
 export const closeDB = async () => {
   if (mongoose.connection.readyState !== 0) {
-    await mongoose.connection.dropDatabase()
+    // Drop database for real MongoDB (not needed for Memory Server)
+    if (process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST) {
+      await mongoose.connection.dropDatabase()
+    }
     await mongoose.connection.close()
   }
   if (mongoServer) {
