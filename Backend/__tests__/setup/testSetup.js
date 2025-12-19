@@ -91,14 +91,48 @@ export const clearDB = async () => {
     return
   }
 
-  // Get all collection names from the database directly
-  const collections = await db.listCollections().toArray()
+  const useSystemMongo = process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST
   
-  // Delete all documents from each collection
+  if (useSystemMongo) {
+    // For real MongoDB, drop all collections to ensure clean state
+    const collections = await db.listCollections().toArray()
+    
+    await Promise.all(
+      collections
+        .map(collection => collection.name)
+        .filter(name => !name.startsWith('system.'))
+        .map(async (collectionName) => {
+          try {
+            await db.collection(collectionName).drop()
+          } catch (error) {
+            // Ignore if collection doesn't exist
+            if (error.codeName !== 'NamespaceNotFound') {
+              throw error
+            }
+          }
+        })
+    )
+    
+    // Rebuild indexes by syncing Mongoose models
+    // This ensures indexes are recreated for the next test
+    const modelNames = Object.keys(mongoose.models)
+    for (const modelName of modelNames) {
+      try {
+        await mongoose.models[modelName].createIndexes()
+      } catch (error) {
+        // Ignore errors if model doesn't need indexes
+      }
+    }
+    
+    return
+  }
+
+  // For MongoDB Memory Server, just delete documents
+  const collections = await db.listCollections().toArray()
   await Promise.all(
     collections
       .map(collection => collection.name)
-      .filter(name => !name.startsWith('system.')) // Skip system collections
+      .filter(name => !name.startsWith('system.'))
       .map(collectionName => 
         db.collection(collectionName).deleteMany({})
       )
