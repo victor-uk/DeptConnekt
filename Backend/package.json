@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon server.js",
+    "build": "node server.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
@@ -20,7 +21,6 @@
   "description": "",
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "dotenv": "^17.2.3",
     "jest": "^30.2.0",
     "mongodb-memory-server": "^10.1.0",
     "nodemon": "^3.1.10",
@@ -31,6 +31,7 @@
     "cloudinary": "^1.41.3",
     "connect-timeout": "^1.9.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-mongo-sanitize": "^2.2.0",
     "helmet": "^8.1.0",
@@ -42,8 +43,6 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.9",
     "otp-generator": "^4.0.1",
-    "socket.io": "^4.8.1",
-    "swagger-ui-express": "^5.0.1",
-    "yamljs": "^0.3.0"
+    "socket.io": "^4.8.1"
   }
 }
