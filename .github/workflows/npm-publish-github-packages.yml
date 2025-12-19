@@ -52,4 +52,4 @@ jobs:
         with:
           context: ./Backend
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/deptconnekt:${{ github.ref_name }}
+          tags: ghcr.io/${{ github.repository_owner }}/deptconnekt:latest
