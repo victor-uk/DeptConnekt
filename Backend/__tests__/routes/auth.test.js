@@ -6,9 +6,7 @@ import StudentSchema from '../../models/StudentSchema.js';
 import TokenSchema from '../../models/TokenSchema.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-// We import fetch to ensure it's available in the global scope for the controller.
-// No mocking is applied.
-import fetch from 'node-fetch';
+
 import { expiryDate } from '../../config/defaults.js';
 
 describe('Auth Module', () => {
