@@ -5,7 +5,7 @@
   "scripts": {
     "start": "nodemon server.js",
     "build": "node server.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:system-mongo": "cross-env USE_SYSTEM_MONGO=true NODE_OPTIONS=--experimental-vm-modules jest",
