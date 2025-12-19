@@ -19,6 +19,9 @@ jobs:
         working-directory: ./Backend
       - run: npm test
         working-directory: ./Backend
+        env:
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_EXPIRES: 7d
 
   # publish-gpr:
   #   needs: build

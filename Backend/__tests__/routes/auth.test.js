@@ -9,6 +9,10 @@ import jwt from 'jsonwebtoken';
 
 import { expiryDate } from '../../config/defaults.js';
 
+// Set test JWT secret if not already set (needed for module-level token generation)
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
+process.env.JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
+
 describe('Auth Module', () => {
   beforeAll(async () => {
     await connectDB() 
