@@ -36,7 +36,7 @@ export const getTimetables = async (req, res) => {
   if (semester) filter.semester = semester
   if (level) filter.level = level
   filter.archived = archived === 'true' ? true : false
-  if (user.admissionYear ) {
+  if (user?.admissionYear) {  // Add optional chaining
     filter.admissionYear = user.admissionYear 
   }
 

@@ -94,36 +94,14 @@ export const clearDB = async () => {
   const useSystemMongo = process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST
   
   if (useSystemMongo) {
-    // For real MongoDB, drop all collections to ensure clean state
-    const collections = await db.listCollections().toArray()
+    // Drop entire database - faster and more reliable than dropping collections
+    await db.dropDatabase()
     
-    await Promise.all(
-      collections
-        .map(collection => collection.name)
-        .filter(name => !name.startsWith('system.'))
-        .map(async (collectionName) => {
-          try {
-            await db.collection(collectionName).drop()
-          } catch (error) {
-            // Ignore if collection doesn't exist
-            if (error.codeName !== 'NamespaceNotFound') {
-              throw error
-            }
-          }
-        })
-    )
+    // Wait a moment to ensure drop is complete
+    await new Promise(resolve => setTimeout(resolve, 50))
     
-    // Rebuild indexes by syncing Mongoose models
-    // This ensures indexes are recreated for the next test
-    const modelNames = Object.keys(mongoose.models)
-    for (const modelName of modelNames) {
-      try {
-        await mongoose.models[modelName].createIndexes()
-      } catch (error) {
-        // Ignore errors if model doesn't need indexes
-      }
-    }
-    
+    // MongoDB will automatically recreate the database and collections
+    // when models are used next, with indexes properly set up
     return
   }
 
