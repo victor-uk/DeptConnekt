@@ -13,9 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: cd Backend
       - run: npm ci
+        working-directory: ./Backend
       - run: npm test
+        working-directory: ./Backend
 
   # publish-gpr:
   #   needs: build
