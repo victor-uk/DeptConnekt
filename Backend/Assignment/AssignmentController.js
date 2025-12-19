@@ -50,7 +50,7 @@ export const getAssignments = async (req, res) => {
     filter.createdBy = id
   }
   // prevents students from acessing other level's resouces
-  if (user.admissionYear) {
+  if (user?.admissionYear) {
   filter.admissionYear = user.admissionYear
 }
 console.log(filter);

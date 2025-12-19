@@ -66,7 +66,10 @@ export const connectDB = async () => {
  */
 export const closeDB = async () => {
   if (mongoose.connection.readyState !== 0) {
-    await mongoose.connection.dropDatabase()
+    // Drop database for real MongoDB (not needed for Memory Server)
+    if (process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST) {
+      await mongoose.connection.dropDatabase()
+    }
     await mongoose.connection.close()
   }
   if (mongoServer) {
@@ -79,10 +82,38 @@ export const closeDB = async () => {
  * Clear all test data from database
  */
 export const clearDB = async () => {
-  const collections = mongoose.connection.collections
-  for (const key in collections) {
-    const collection = collections[key]
-    await collection.deleteMany({})
+  if (mongoose.connection.readyState === 0) {
+    return // Not connected
   }
+
+  const db = mongoose.connection.db
+  if (!db) {
+    return
+  }
+
+  const useSystemMongo = process.env.USE_SYSTEM_MONGO === 'true' || process.env.MONGO_URI_TEST
+  
+  if (useSystemMongo) {
+    // Drop entire database - faster and more reliable than dropping collections
+    await db.dropDatabase()
+    
+    // Wait a moment to ensure drop is complete
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // MongoDB will automatically recreate the database and collections
+    // when models are used next, with indexes properly set up
+    return
+  }
+
+  // For MongoDB Memory Server, just delete documents
+  const collections = await db.listCollections().toArray()
+  await Promise.all(
+    collections
+      .map(collection => collection.name)
+      .filter(name => !name.startsWith('system.'))
+      .map(collectionName => 
+        db.collection(collectionName).deleteMany({})
+      )
+  )
 }
 
