@@ -15,6 +15,8 @@ jobs:
           node-version: 24
       - run: npm ci
         working-directory: ./Backend
+      - run: npm test -- --listTests
+        working-directory: ./Backend
       - run: npm test
         working-directory: ./Backend
 
