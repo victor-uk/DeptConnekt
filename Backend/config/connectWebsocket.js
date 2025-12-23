@@ -55,7 +55,11 @@ export const initServer = async (server) => {
 
 export const getIO = () => {
     if (!io) {
-        throw new Error("socket is not initialised")
+        const mock = {
+            to: () => mock,
+            emit: () => mock
+        };
+        return mock;
     }
     return io
 }
