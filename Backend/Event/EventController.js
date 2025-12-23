@@ -3,6 +3,7 @@ import { generatePreview } from "../helpers/generatePreview.js";
 import paginator from "../helpers/paginator.js";
 import EventSchema from "../models/EventSchema.js";
 import { BadRequestError, ResourceNotFoundError } from "../utils/Error.js";
+import { getIO } from "../config/connectWebsocket.js";
 
 export const createEvent = async (req, res) => {
   const { id, role } = req.user;
@@ -21,7 +22,19 @@ export const createEvent = async (req, res) => {
     createdByModel: userModel,
   });
 
-  const populated = await event.populate("createdBy", "fullName");
+  const populated = await event.populate("createdBy", "lastName");
+
+  // Emit events to staff
+  const roles = ["lecturer", "courseAdviser", "admin"];
+  roles.forEach((r) => getIO().to(`role:${r}`).emit("newEvent", populated));
+
+  // Emit to target admission years
+  if (populated.targetGroups && populated.targetGroups.length > 0) {
+    populated.targetGroups.forEach((year) => {
+      getIO().to(`admissionYear:${year}`).emit("newEvent", populated);
+    });
+  }
+
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Event created successfully",
@@ -38,7 +51,7 @@ export const getEvents = async (req, res) => {
   if (location) filter.location = { $regex: location, $options: "i" };
   if (targetGroups) filter.targetGroups = targetGroups;
   if (eventDate) {
-    if (isNaN(new Date (eventDate).getTime())) {
+    if (isNaN(new Date(eventDate).getTime())) {
       throw new BadRequestError("Invalid event date");
     }
     filter.eventDate = eventDate
@@ -48,7 +61,7 @@ export const getEvents = async (req, res) => {
   const events = await EventSchema.find(filter)
     .skip(skip)
     .limit(queryLimit)
-    .populate("createdBy", "fullName")
+    .populate("createdBy", "lastName")
     .sort({ eventDate: 1 }) // Sort by upcoming events
     .lean();
 
@@ -69,7 +82,7 @@ export const getEvents = async (req, res) => {
 
 export const getEventById = async (req, res) => {
   const { id } = req.params;
-  const event = await EventSchema.findById(id).populate("createdBy", "fullName");
+  const event = await EventSchema.findById(id).populate("createdBy", "lastName");
   if (!event) throw new ResourceNotFoundError("Event not found");
 
   res.status(StatusCodes.OK).json({
@@ -91,9 +104,18 @@ export const updateEvent = async (req, res) => {
   const event = await EventSchema.findByIdAndUpdate(id, updatedDoc, {
     new: true,
     runValidators: true,
-  });
+  }).populate("createdBy", "lastName");
 
   if (!event) throw new ResourceNotFoundError("Event not found");
+
+  // Emit updates
+  const roles = ["lecturer", "courseAdviser", "admin"];
+  roles.forEach((r) => getIO().to(`role:${r}`).emit("updateEvent", event));
+  if (event.targetGroups && event.targetGroups.length > 0) {
+    event.targetGroups.forEach((year) => {
+      getIO().to(`admissionYear:${year}`).emit("updateEvent", event);
+    });
+  }
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -106,6 +128,17 @@ export const deleteEvent = async (req, res) => {
   const { id } = req.params;
   const event = await EventSchema.findByIdAndDelete(id);
   if (!event) throw new ResourceNotFoundError("Event not found");
+
+  // Emit delete
+  getIO().to("role:admin").emit("deleteEvent", { id });
+  getIO().to(`user:${event.createdBy}`).emit("deleteEvent", { id });
+
+  if (event.targetGroups && event.targetGroups.length > 0) {
+    event.targetGroups.forEach((year) => {
+      getIO().to(`admissionYear:${year}`).emit("deleteEvent", { id });
+    });
+  }
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Event deleted successfully",
@@ -115,16 +148,38 @@ export const deleteEvent = async (req, res) => {
 
 export const archiveEvent = async (req, res) => {
   const { id } = req.params;
-  const event = await EventSchema.findById(id);
+  const event = await EventSchema.findById(id).populate("createdBy", "lastName");
   if (!event) throw new ResourceNotFoundError("Event not found");
   await event.archive();
+
+  // Emit updates
+  getIO().to("role:admin").emit("updateEvent", event);
+  getIO().to(`user:${event.createdBy}`).emit("updateEvent", event);
+
+  if (event.targetGroups && event.targetGroups.length > 0) {
+    event.targetGroups.forEach((year) => {
+      getIO().to(`admissionYear:${year}`).emit("deleteEvent", { id: event._id });
+    });
+  }
+
   res.status(StatusCodes.OK).json({ success: true, message: 'Event archived', data: event });
 };
 
 export const unarchiveEvent = async (req, res) => {
   const { id } = req.params;
-  const event = await EventSchema.findById(id);
+  const event = await EventSchema.findById(id).populate("createdBy", "lastName");
   if (!event) throw new ResourceNotFoundError("Event not found");
   await event.unarchive();
+
+  // Emit updates
+  getIO().to("role:admin").emit("updateEvent", event);
+  getIO().to(`user:${event.createdBy._id || event.createdBy}`).emit("updateEvent", event);
+
+  if (event.targetGroups && event.targetGroups.length > 0) {
+    event.targetGroups.forEach((year) => {
+      getIO().to(`admissionYear:${year}`).emit("newEvent", event);
+    });
+  }
+
   res.status(StatusCodes.OK).json({ success: true, message: 'Event unarchived', data: event });
 }

@@ -9,7 +9,7 @@ import jwt from 'jsonwebtoken'
 
 /**
  * @desc Register a new lecturer
- * @route POST /api/v1/register/lecturer
+ * @route POST /api/v1/auth/register/lecturer
  * @access Public
  */
 export const registerLecturer = async (req, res) => {
@@ -40,7 +40,7 @@ export const registerLecturer = async (req, res) => {
 
 /**
  * @desc Register a new student
- * @route POST /api/v1/register/student
+ * @route POST /api/v1/auth/register/student
  * @access Public
  */
 export const registerStudent = async (req, res) => {
@@ -72,7 +72,7 @@ export const registerStudent = async (req, res) => {
 
 /**
  * @desc Authenticate a user and return a JWT
- * @route POST /api/v1/login
+ * @route POST /api/v1/auth/login
  * @access Public
  */
 export const login = async (req, res) => {
@@ -105,7 +105,7 @@ export const login = async (req, res) => {
 
 /**
  * @desc Initiate password reset process for a user
- * @route POST /api/v1/reset-password
+ * @route POST /api/v1/auth/reset-password
  * @access Public
  */
 export const resetPassword = async (req, res) => {
@@ -134,7 +134,7 @@ export const resetPassword = async (req, res) => {
 
 /**
  * @desc Verify an OTP and return a short-lived JWT for password change
- * @route POST /api/v1/verify-otp
+ * @route POST /api/v1/auth/verify-otp
  * @access Public
  */
 export const verifyOTP = async (req, res) => {
@@ -175,7 +175,7 @@ export const verifyOTP = async (req, res) => {
 
 /**
  * @desc Change the user's password after OTP verification
- * @route POST /api/v1/change-password
+ * @route POST /api/v1/auth/change-password
  * @access Private (Requires short-lived token from OTP verification)
  */
 export const changePassword = async (req, res) => {
