@@ -26,9 +26,9 @@ export const emailConfirmationHelper = async id => {
     expiresAt: expiryDate
   })
   try {
-    await transporter.sendMail(mailOptions);
+    await transport.sendMail(mailOptions);
   } catch (err) {
-    console.log(err.message); // Human-readable message
+    console.error(err.message); // Human-readable message
     console.log(err.code);    // e.g., 'ECONNECTION', 'EAUTH'
     console.log(err.response); // SMTP server response
   }

@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   backend:
-    image: ghcr.io/<your-username-or-org>/deptconnekt:latest
+    image: ghcr.io/victor-uk/deptconnekt:latest
     container_name: deptconnekt-backend
     ports:
       - "5000:5000"

@@ -20,7 +20,12 @@ const url =
     ? process.env.MONGO_URI_PROD
     : process.env.MONGO_URI_DEV;
 // Initialise websockets
-initServer(server);
+try {
+    await initServer(server)
+    console.log("Websocket connection established")
+} catch (error) {
+    console.log(error)
+}
 
 await connectDB(url);
 server.listen(port, () => {

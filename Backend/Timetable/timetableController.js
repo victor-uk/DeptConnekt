@@ -1,13 +1,14 @@
 import { StatusCodes } from 'http-status-codes'
 import TimetableSchema from '../models/TimetableSchema.js'
 import paginator from '../helpers/paginator.js'
-import { BadRequestError, PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
+import { BadRequestError, ResourceNotFoundError } from '../utils/Error.js'
 import { getUser } from '../helpers/getUser.js'
+import { getIO } from '../config/connectWebsocket.js'
 
 export const createTimetable = async (req, res) => {
   const { admissionYear, semester, level } = req.body
   const { id: userId } = req.user
-  
+
   // The model for a student creating a timetable should be 'Student'
   const timetable = await TimetableSchema.create({
     admissionYear,
@@ -16,6 +17,10 @@ export const createTimetable = async (req, res) => {
     createdBy: userId,
     createdByModel: 'Lecturer'
   })
+
+  // Emit events
+  getIO().to("role:admin").to(`role:lecturer`).to(`role:courseAdviser`).to(`admissionYear:${timetable.admissionYear}`).emit('newTimetable', timetable)
+
   res
     .status(StatusCodes.CREATED)
     .json({
@@ -37,7 +42,7 @@ export const getTimetables = async (req, res) => {
   if (level) filter.level = level
   filter.archived = archived === 'true' ? true : false
   if (user?.admissionYear) {  // Add optional chaining
-    filter.admissionYear = user.admissionYear 
+    filter.admissionYear = user.admissionYear
   }
 
   const timetables = await TimetableSchema.find(filter)
@@ -87,6 +92,9 @@ export const updateTimetable = async (req, res) => {
   }).lean()
   if (!timetable) throw new ResourceNotFoundError('Timetable not found')
 
+  // Emit update
+  getIO().to("role:admin").to(`role:lecturer`).to(`role:courseAdviser`).to(`admissionYear:${timetable.admissionYear}`).emit('newTimetable', timetable)
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: 'Timetable updated successfully',
@@ -98,6 +106,9 @@ export const deleteTimetable = async (req, res) => {
   const { id } = req.params
   const timetable = await TimetableSchema.findByIdAndDelete(id)
   if (!timetable) throw new ResourceNotFoundError('Timetable not found')
+
+  // Emit delete
+  getIO().to("role:admin").to(`user:${timetable.createdBy}`).to(`admissionYear:${timetable.admissionYear}`).emit("deleteTimetable", { id, year: timetable.admissionYear });
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -119,6 +130,10 @@ export const addClass = async (req, res) => {
     lecturer: lecturerId
   })
 
+  // Emit update
+  getIO().to("role:admin").to(`role:lecturer`).to(`role:courseAdviser`).to(`admissionYear:${timetable.admissionYear}`).emit('updateTimetable', timetable)
+
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: 'Class added to timetable successfully',
@@ -134,7 +149,10 @@ export const deleteClass = async (req, res) => {
   if (!timetable) throw new ResourceNotFoundError('Timetable not found')
 
   const classToDelete = await timetable.removeClassFromDay(dayName, courseCode)
-  
+
+  // Emit update
+  getIO().to("role:admin").to(`user:${timetable.createdBy}`).to(`admissionYear:${timetable.admissionYear}`).emit("updateTimetable", timetable);
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: 'Class removed from timetable successfully',
@@ -147,6 +165,10 @@ export const archiveTimetable = async (req, res) => {
   const timetable = await TimetableSchema.findById(id)
   if (!timetable) throw new ResourceNotFoundError('Timetable not found')
   await timetable.archive()
+
+  // Emit update
+  getIO().to("role:admin").to(`user:${timetable.createdBy}`).to(`admissionYear:${timetable.admissionYear}`).emit("updateTimetable", timetable);
+
   res
     .status(StatusCodes.OK)
     .json({ success: true, message: 'Timetable archived', data: timetable })
@@ -157,5 +179,9 @@ export const unarchiveTimetable = async (req, res) => {
   const timetable = await TimetableSchema.findById(id)
   if (!timetable) throw new ResourceNotFoundError('Timetable not found')
   await timetable.unarchive()
+
+  // Emit update
+  getIO().to(`user:${timetable.createdBy}`).to("role:admin").to(`admissionYear:${timetable.admissionYear}`).emit("updateTimetable", timetable)
+
   res.status(StatusCodes.OK).json({ success: true, message: 'Timetable unarchived', data: timetable })
 }

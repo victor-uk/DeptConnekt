@@ -6,7 +6,7 @@ import { PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
 import { buildFilter } from '../helpers/filterHelper.js'
 import { getSchema } from '../helpers/getSchema.js'
 import mongoose from 'mongoose'
-
+import { getIO } from '../config/connectWebsocket.js'
 /**
  * @desc Create a new announcement
  * @route POST /api/v1/announcements
@@ -31,7 +31,14 @@ export const createAnnouncement = async (req, res) => {
     createdBy: id,
     createdByModel: userModel // createdBy refs createdByModel through ref path
   })
-  announcement = await AnnouncementSchema.findById(announcement._id).populate('createdBy', 'fullName _id')
+  announcement = await AnnouncementSchema.findById(announcement._id).populate('createdBy', 'lastName _id')
+  getIO()
+    .to(`role:lecturer`)
+    .to(`role:courseAdviser`)
+    .to(`role:admin`)
+    .to(`admissionYear:${admissionYear}`)
+    .emit('newAnnouncement', { title, preview, category, admissionYear })
+
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: 'Annoucement created',
@@ -47,10 +54,10 @@ export const getAnnouncements = async (req, res) => {
   const { skip, queryLimit } = paginator(page, limit)
   const { role, id } = req.user
   const schema = getSchema(role)
-  
-  const user = await schema.findById(id).lean() 
+
+  const user = await schema.findById(id).lean()
   // console.log(user, id, role);
-  
+
   // Use the reusable filter builder
   const filter = buildFilter(req.query, ['title', 'category'])
 
@@ -67,9 +74,9 @@ export const getAnnouncements = async (req, res) => {
     .select('-body -attachments')
     .skip(skip)
     .limit(queryLimit)
-    .populate('createdBy', 'fullName id')
+    .populate('createdBy', 'lastName id')
     .lean()
-  
+
   if (announcements.length === 0) {
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -85,7 +92,7 @@ export const getAnnouncements = async (req, res) => {
 }
 export const getAnnouncementById = async (req, res) => {
   const { id } = req.params
-  const announcement = await AnnouncementSchema.findById(id).populate('createdBy', 'fullName id').lean()
+  const announcement = await AnnouncementSchema.findById(id).populate('createdBy', 'lastName id').lean()
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
   res.status(StatusCodes.OK).json({
     success: true,
@@ -109,8 +116,18 @@ export const updateAnnouncement = async (req, res) => {
   const announcement = await AnnouncementSchema.findByIdAndUpdate(id, updatedDoc, {
     new: true,
     runValidators: true
-  })
+  }).populate('createdBy', 'lastName id')
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
+
+  // Emit update events
+  getIO()
+    .to(`role:lecturer`)
+    .to(`role:courseAdviser`)
+    .to(`role:admin`)
+    .to(`admissionYear:${announcement.admissionYear}`)
+    .emit('updateAnnouncement', announcement)
+  
+
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Annoucement updated',
@@ -121,18 +138,41 @@ export const deleteAnnouncement = async (req, res) => {
   const { id } = req.params
   const announcement = await AnnouncementSchema.findByIdAndDelete(id)
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
+
+  // Emit delete events
+  getIO()
+    .to("role:admin")
+    .to(`user:${announcement.createdBy._id}`)
+    .emit("deleteAnnouncement", { id });
+
+  if (announcement.admissionYear) {
+    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('deleteAnnouncement', { id })
+  }
+
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Annoucement deleted',
     data: {}
-  })  
+  })
 }
 
 export const archiveAnnouncement = async (req, res) => {
   const { id } = req.params
-  const announcement = await AnnouncementSchema.findById(id)
+  const announcement = await AnnouncementSchema.findById(id).populate('createdBy', 'lastName id')
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
   await announcement.archive()
+
+  // Emit archive events (Staff only as students shouldn't see archived ones usually)
+  getIO()
+    .to("role:admin")
+    .to(`user:${announcement.createdBy._id}`)
+    .emit("updateAnnouncement", announcement);
+
+  if (announcement.admissionYear) {
+    // For students, this might mean removing it from their active view if they don't see archives
+    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('deleteAnnouncement', { id: announcement._id })
+  }
+
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Annoucement archived',
@@ -142,9 +182,20 @@ export const archiveAnnouncement = async (req, res) => {
 
 export const unarchiveAnnouncement = async (req, res) => {
   const { id } = req.params
-  const announcement = await AnnouncementSchema.findById(id)
+  const announcement = await AnnouncementSchema.findById(id).populate('createdBy', 'lastName id')
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
   await announcement.unarchive()
+
+  // Emit unarchive events
+  getIO()
+    .to("role:admin")
+    .to(`user:${announcement.createdBy._id}`)
+    .emit("updateAnnouncement", announcement);
+
+  if (announcement.admissionYear) {
+    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('newAnnouncement', announcement)
+  }
+
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Annoucement unarchived',
