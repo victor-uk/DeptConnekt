@@ -21,12 +21,13 @@ const assignmentSchema = new mongoose.Schema(
     description: {
       type: String,
       required: [true, "Assignment description is required"],
+      maxlength: 2500
     },
 
     // Short preview
     preview: {
       type: String,
-      maxlength: 150,
+      maxlength: 300,
       required: true,
       trim: true,
     },

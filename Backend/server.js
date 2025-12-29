@@ -1,14 +1,12 @@
+import "dotenv/config";
 import { createServer } from "http";
-import dotenv from "dotenv";
 import connectDB from "./config/connectDB.js";
 import app from "./config/app.js";
 import { initServer } from "./config/connectWebsocket.js";
 
-dotenv.config();
-
 // Disable console.log in production to avoid noisy logs
 if (process.env.NODE_ENV === "production") {
-  console.log = () => {};
+  console.log = () => { };
 }
 
 //create http server
@@ -21,10 +19,10 @@ const url =
     : process.env.MONGO_URI_DEV;
 // Initialise websockets
 try {
-    await initServer(server)
-    console.log("Websocket connection established")
+  await initServer(server)
+  console.log("Websocket connection established")
 } catch (error) {
-    console.log(error)
+  console.log(error)
 }
 
 await connectDB(url);

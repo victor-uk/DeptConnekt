@@ -32,11 +32,12 @@ export const createAnnouncement = async (req, res) => {
     createdByModel: userModel // createdBy refs createdByModel through ref path
   })
   announcement = await AnnouncementSchema.findById(announcement._id).populate('createdBy', 'lastName _id')
+  const admissionYearRoom = admissionYear.map(year => `admissionYear:${year}`)
   getIO()
     .to(`role:lecturer`)
     .to(`role:courseAdviser`)
     .to(`role:admin`)
-    .to(`admissionYear:${admissionYear}`)
+    .to(...admissionYearRoom)
     .emit('newAnnouncement', { title, preview, category, admissionYear })
 
   res.status(StatusCodes.CREATED).json({
@@ -118,13 +119,13 @@ export const updateAnnouncement = async (req, res) => {
     runValidators: true
   }).populate('createdBy', 'lastName id')
   if (!announcement) throw new ResourceNotFoundError('Annoucement not found')
-
+    const admissionYearRoom = announcement.admissionYear.map(year => `admissionYear:${year}`)
   // Emit update events
   getIO()
     .to(`role:lecturer`)
     .to(`role:courseAdviser`)
     .to(`role:admin`)
-    .to(`admissionYear:${announcement.admissionYear}`)
+    .to(...admissionYearRoom)
     .emit('updateAnnouncement', announcement)
   
 
@@ -145,9 +146,8 @@ export const deleteAnnouncement = async (req, res) => {
     .to(`user:${announcement.createdBy._id}`)
     .emit("deleteAnnouncement", { id });
 
-  if (announcement.admissionYear) {
-    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('deleteAnnouncement', { id })
-  }
+  const admissionYearRoom = announcement.admissionYear.map(year => `admissionYear:${year}`)
+  getIO().to(...admissionYearRoom).emit('deleteAnnouncement', { id })
 
   return res.status(StatusCodes.OK).json({
     success: true,
@@ -168,10 +168,8 @@ export const archiveAnnouncement = async (req, res) => {
     .to(`user:${announcement.createdBy._id}`)
     .emit("updateAnnouncement", announcement);
 
-  if (announcement.admissionYear) {
-    // For students, this might mean removing it from their active view if they don't see archives
-    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('deleteAnnouncement', { id: announcement._id })
-  }
+  const admissionYearRoom = announcement.admissionYear.map(year => `admissionYear:${year}`)
+  getIO().to(...admissionYearRoom).emit('deleteAnnouncement', { id: announcement._id })
 
   return res.status(StatusCodes.OK).json({
     success: true,
@@ -192,9 +190,8 @@ export const unarchiveAnnouncement = async (req, res) => {
     .to(`user:${announcement.createdBy._id}`)
     .emit("updateAnnouncement", announcement);
 
-  if (announcement.admissionYear) {
-    getIO().to(`admissionYear:${announcement.admissionYear}`).emit('newAnnouncement', announcement)
-  }
+  const admissionYearRoom = announcement.admissionYear.map(year => `admissionYear:${year}`)
+  getIO().to(...admissionYearRoom).emit('newAnnouncement', announcement)
 
   return res.status(StatusCodes.OK).json({
     success: true,

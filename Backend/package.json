@@ -27,8 +27,9 @@
     "supertest": "^7.1.4"
   },
   "dependencies": {
+    "@huggingface/inference": "^4.13.5",
     "bcrypt": "^6.0.0",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.8.0",
     "connect-timeout": "^1.9.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -40,7 +41,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0",
+    "multer-storage-cloudinary": "^2.2.1",
     "nodemailer": "^7.0.9",
     "otp-generator": "^4.0.1",
     "socket.io": "^4.8.1"

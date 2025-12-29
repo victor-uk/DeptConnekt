@@ -21,11 +21,12 @@ const eventSchema = new mongoose.Schema(
     description: {
       type: String,
       required: [true, "Event description is required"],
+      maxlength: 2500
     },
 
     preview: {
       type: String,
-      maxlength: 150,
+      maxlength: 300,
       required: true,
       trim: true,
     },

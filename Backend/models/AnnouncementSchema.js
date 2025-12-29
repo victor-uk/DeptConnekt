@@ -6,13 +6,14 @@ const announcementSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 150,
+      maxlength: 300,
     },
 
     body: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 2500
     },
 
     preview: {
