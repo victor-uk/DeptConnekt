@@ -37,7 +37,7 @@ describe('Announcement Routes', () => {
       body: 'This is a test announcement body with enough content',
       category: 'general',
       preview: generatePreview('This is a test announcement body with enough content'),
-      admissionYear: 2021
+      admissionYear: [2021]
     }
 
     const response = await request(app)

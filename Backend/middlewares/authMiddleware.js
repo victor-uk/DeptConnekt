@@ -154,16 +154,16 @@ export const announcementSchema = joi.object({
     })
     .optional(),
   admissionYear: joi
-    .number()
-    .integer()
-    .required()
-    .custom((value, helpers) => {
-      // custom validator to validate admissionYear
-      if (!checkYearIsValid(value)) {
-        return helpers.message(`Admission year ${value} is not valid`)
-      }
-      return value
-    }),
+    .array()
+    .items(
+      joi.number().integer().custom((value, helpers) => {
+        if (!checkYearIsValid(value)) {
+          return helpers.message(`Admission year ${value} is not valid`)
+        }
+        return value
+      })
+    )
+    .required(),
   attachments: joi
     .array()
     .items(
@@ -413,7 +413,7 @@ export const validateInput = schema => {
       console.log(error);
       throw new BadRequestError(error)
     }
-    
+
     next()
   }
 }
