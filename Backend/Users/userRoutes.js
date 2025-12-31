@@ -48,7 +48,7 @@ router.post('/attachments/upload', attachmentParser.array('attachments', 3), (re
   res.send({
     success: true,
     message: 'Attachment uploaded successfully',
-      attachments: req.files.map(file => ({
+    attachments: req.files.map(file => ({
       url: file.path,
       publicId: file.filename,
       fileName: file.originalname
@@ -64,7 +64,7 @@ router.patch('/lecturers/approve/:id', authoriseRoles({ roles: ['admin'] }), asy
   }
   lecturer.status = 'approved'
   await lecturer.save()
-  res.status(StatusCodes.OK).json({success: true, message: 'Lecturer approved successfully', data: {lecturer}})
+  res.status(StatusCodes.OK).json({ success: true, message: 'Lecturer approved successfully', data: { lecturer } })
 })
 
 router.patch('/students/approve/:id', authoriseRoles({ roles: ['courseAdviser'] }), async (req, res) => {
@@ -73,21 +73,77 @@ router.patch('/students/approve/:id', authoriseRoles({ roles: ['courseAdviser'] 
   const student = await StudentSchema.findById(studentId).select('status admissionYear adviser')
   const lecturer = await LecturerSchema.findById(id).select('year')
   if (!student) {
-    return res.status(404).json({ success: false, message: 'Lecturer not found', data: {}})
+    return res.status(404).json({ success: false, message: 'Lecturer not found', data: {} })
   }
   if (student.admissionYear !== lecturer.year) throw new PermissionDeniedError('You can only approve students from your admission year')
   student.status = 'approved'
   student.adviser = lecturer._id
   await student.save()
-  res.status(StatusCodes.OK).json({success: true, message: 'Student approved successfully', data: {student}})
+  res.status(StatusCodes.OK).json({ success: true, message: 'Student approved successfully', data: { student } })
 })
 
+/**
+ * @swagger
+ * /api/v1/me:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *       401:
+ *         description: Unauthorized
+ *   patch:
+ *     summary: Update current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ */
 router.route('/me').get(getMe).patch(validateInput(updateMeSchema), updateMe)
 
+/**
+ * @swagger
+ * /api/v1/lecturers:
+ *   get:
+ *     summary: Get all lecturers
+ *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of lecturers
+ */
 router
   .route('/lecturers')
   .get(authoriseRoles({ roles: ['admin', 'courseAdviser', 'lecturer'] }), getAllLecturers)
 
+/**
+ * @swagger
+ * /api/v1/students:
+ *   get:
+ *     summary: Get students by year
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of students
+ */
 router
   .route('/students')
   .get(
@@ -95,6 +151,38 @@ router
     getStudentsByYear
   )
 
+/**
+ * @swagger
+ * /api/v1/lecturers/{id}:
+ *   get:
+ *     summary: Get lecturer by ID
+ *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lecturer details
+ *   delete:
+ *     summary: Delete a lecturer
+ *     tags: [Lecturers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lecturer deleted
+ */
 router
   .route('/lecturers/:id')
   .get(
@@ -110,6 +198,24 @@ router
     updateLecturer
   )
 
+/**
+ * @swagger
+ * /api/v1/students/{id}:
+ *   get:
+ *     summary: Get student by ID
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Student details
+ */
 router
   .route('/students/:id')
   .get(

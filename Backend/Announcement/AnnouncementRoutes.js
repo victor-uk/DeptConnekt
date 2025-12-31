@@ -18,6 +18,53 @@ import {
 const router = Router({ mergeParams: true })
 
 router.use(verifyToken)
+/**
+ * @swagger
+ * /api/v1/announcements:
+ *   post:
+ *     summary: Create a new announcement
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - body
+ *               - preview
+ *               - admissionYear
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *               preview:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *                 enum: ["general", "academic", "event", "alert", "other"]
+ *               admissionYear:
+ *                 type: array
+ *                 items:
+ *                   type: number
+ *     responses:
+ *       201:
+ *         description: Announcement created successfully
+ *       401:
+ *         description: Unauthorized
+ *   get:
+ *     summary: Get all announcements
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of announcements
+ */
 router
   .route('/announcements')
   .post(
@@ -33,6 +80,65 @@ router
     }),
     getAnnouncements
   )
+
+/**
+ * @swagger
+ * /api/v1/announcements/{id}:
+ *   get:
+ *     summary: Get announcement by ID
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Announcement details
+ *       404:
+ *         description: Announcement not found
+ *   patch:
+ *     summary: Update an announcement
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Announcement updated
+ *   delete:
+ *     summary: Delete an announcement
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Announcement deleted
+ */
 router
   .route('/announcements/:id')
   .get(
@@ -41,8 +147,6 @@ router
     }),
     getAnnouncementById
   )
-  // the authoriseRoles middleware relies on the fact that when this route is splited by '/',
-  // the resourceName (e.g announcements) is returned and the mapped to the schema
   .patch(
     authoriseRoles({
       resourceName: 'announcement',
@@ -61,6 +165,24 @@ router
     deleteAnnouncement
   )
 
+/**
+ * @swagger
+ * /api/v1/announcements/{id}/archive:
+ *   patch:
+ *     summary: Archive an announcement
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Announcement archived
+ */
 router
   .route('/announcements/:id/archive')
   .patch(
@@ -71,6 +193,25 @@ router
     }),
     archiveAnnouncement
   )
+
+/**
+ * @swagger
+ * /api/v1/announcements/{id}/unarchive:
+ *   patch:
+ *     summary: Unarchive an announcement
+ *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Announcement unarchived
+ */
 router
   .route('/announcements/:id/unarchive')
   .patch(

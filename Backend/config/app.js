@@ -12,7 +12,7 @@ import timetableRoutes from "../Timetable/timetableRoutes.js"
 import aiRoutes from "../Ai/aiRoutes.js"
 import { timeoutMiddleware, haltOnTimedout } from '../middlewares/timeoutMiddleware.js';
 import mongoSanitise from 'express-mongo-sanitize'
-import { InferenceClient, InferenceClientError } from "@huggingface/inference";
+import { setupSwagger } from "./swagger.js";
 
 
 const app = express()
@@ -33,50 +33,53 @@ app.use((req, res, next) => {
 })
 app.use(timeoutMiddleware);
 
+setupSwagger(app);
+
 // Routes
-app.get("/", (req, res) => {
-    res.send("DeptConnekt is loading")
-})
 
-app.post("/ai", async (req, res) => {
-    const client = new InferenceClient(process.env.HF_API_KEY)
-    try {
-        // 1. Set headers for streaming
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
+// app.get("/", (req, res) => {
+//     res.send("DeptConnekt is loading")
+// })
 
-        const result = client.chatCompletionStream({
-            messages: [
-                { role: "system", content: "You are an academic assistant of the department of software engineering, FUTO" },
-                { role: "user", content: "Create an announcement for 400l students to pay their school fees" }
-            ],
-            model: "allenai/Olmo-3-7B-Instruct:publicai"
-        })
+// app.post("/ai", async (req, res) => {
+//     const client = new InferenceClient(process.env.HF_API_KEY)
+//     try {
+//         // 1. Set headers for streaming
+//         res.setHeader('Content-Type', 'text/event-stream');
+//         res.setHeader('Cache-Control', 'no-cache');
+//         res.setHeader('Connection', 'keep-alive');
 
-        for await (const chunk of result) {
-            const content = chunk.choices[0].delta?.content // choices is an array of possible answers. It's an option that can be set tell the llm to genrate diff answers
-            // content may be empty bcos some chunks are metadata, end of stream chunks or for other purposes
-            if (content) {
-                // 2. Log to server console immediately
-                process.stdout.write(content);
+//         const result = client.chatCompletionStream({
+//             messages: [
+//                 { role: "system", content: "You are an academic assistant of the department of software engineering, FUTO" },
+//                 { role: "user", content: "Create an announcement for 400l students to pay their school fees" }
+//             ],
+//             model: "allenai/Olmo-3-7B-Instruct:publicai"
+//         })
 
-                // 3. Write to client (Postman/Frontend) immediately
-                // SSE format: "data: <content>\n\n"
-                res.write(`data: ${JSON.stringify({ content })}\n\n`);
-            }
-        }
-        // 4. End the response
-        res.end();
-    } catch (error) {
-        console.error("AI Error:", error);
-        if (error instanceof InferenceClientError) {
-            res.status(500).json({ error: error.message, details: error })
-        } else {
-            res.status(500).json({ error: error.message })
-        }
-    }
-})
+//         for await (const chunk of result) {
+//             const content = chunk.choices[0].delta?.content // choices is an array of possible answers. It's an option that can be set tell the llm to genrate diff answers
+//             // content may be empty bcos some chunks are metadata, end of stream chunks or for other purposes
+//             if (content) {
+//                 // 2. Log to server console immediately
+//                 process.stdout.write(content);
+
+//                 // 3. Write to client (Postman/Frontend) immediately
+//                 // SSE format: "data: <content>\n\n"
+//                 res.write(`data: ${JSON.stringify({ content })}\n\n`);
+//             }
+//         }
+//         // 4. End the response
+//         res.end();
+//     } catch (error) {
+//         console.error("AI Error:", error);
+//         if (error instanceof InferenceClientError) {
+//             res.status(500).json({ error: error.message, details: error })
+//         } else {
+//             res.status(500).json({ error: error.message })
+//         }
+//     }
+// })
 
 app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1", userRoutes)
