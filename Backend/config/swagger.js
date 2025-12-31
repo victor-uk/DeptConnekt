@@ -55,5 +55,12 @@ const options = {
 const specs = swaggerJsdoc(options);
 
 export const setupSwagger = (app) => {
+  // Serve the interactive UI
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+  // Serve the raw specification as JSON for sharing (e.g., importing into Postman)
+  app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(specs);
+  });
 };
