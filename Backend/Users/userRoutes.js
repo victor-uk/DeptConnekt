@@ -127,6 +127,23 @@ router.route('/me').get(getMe).patch(validateInput(updateMeSchema), updateMe)
  *     responses:
  *       200:
  *         description: List of lecturers
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: ["lecturer", "courseAdviser"]
+ *         description: Filter by role
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
  */
 router
   .route('/lecturers')
@@ -143,6 +160,13 @@ router
  *     responses:
  *       200:
  *         description: List of students
+ *     parameters:
+ *       - in: query
+ *         name: admissionYear
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Filter students by admission year
  */
 router
   .route('/students')

@@ -95,9 +95,9 @@ router.post("/events/generate-text", textGenerationController);
  *           schema:
  *             type: object
  *             required:
- *               - text
+ *               - prompt
  *             properties:
- *               text:
+ *               prompt:
  *                 type: string
  *     responses:
  *       200:

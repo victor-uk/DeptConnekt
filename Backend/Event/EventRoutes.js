@@ -52,7 +52,7 @@ router.use(verifyToken);
  *                 format: date-time
  *               location:
  *                 type: string
- *               targetGroups:
+ *               admissionYear:
  *                 type: array
  *                 items:
  *                   type: number
@@ -66,6 +66,45 @@ router.use(verifyToken);
  *     tags: [Events]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by event title (search)
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: Filter by event location
+ *       - in: query
+ *         name: admissionYear
+ *         schema:
+ *           type: integer
+ *         description: Filter by admission year
+ *       - in: query
+ *         name: archived
+ *         schema:
+ *           type: boolean
+ *         description: Filter by archived status
+ *       - in: query
+ *         name: eventDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter by event date
  *     responses:
  *       200:
  *         description: List of events

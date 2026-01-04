@@ -69,6 +69,29 @@ router.use(verifyToken);
  *     responses:
  *       200:
  *         description: List of assignments
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by assignment title (search)
+ *       - in: query
+ *         name: admissionYear
+ *         schema:
+ *           type: integer
+ *         description: Filter by admission year
  */
 router
   .route("/assignments")

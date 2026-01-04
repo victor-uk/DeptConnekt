@@ -50,10 +50,10 @@ const eventSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Target audience (could be admission year or role-based)
-    targetGroups: {
+    // Target audience (admission years)
+    admissionYear: {
       type: [Number],
-      default: [], // e.g., ["2021", "2022", "lecturer"]
+      default: [], // e.g., [2021, 2022]
     },
 
     // Date and time of the event

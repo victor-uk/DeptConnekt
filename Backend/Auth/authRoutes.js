@@ -125,6 +125,14 @@ router.post(
  *                 type: string
  *               password:
  *                 type: string
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [lecturer, student]
+ *         description: Role of the user logging in
  *     responses:
  *       200:
  *         description: Login successful
@@ -150,6 +158,14 @@ router.post('/login', validateInput(loginSchema), login)
  *             properties:
  *               email:
  *                 type: string
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [lecturer, student]
+ *         description: Role of the user requesting reset
  *     responses:
  *       200:
  *         description: Reset email sent
@@ -207,6 +223,12 @@ router.post('/verify-otp/:id', validateInput(verifyOtpSchema), verifyOTP)
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: role
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [lecturer, student]
  *     requestBody:
  *       required: true
  *       content:
@@ -214,12 +236,9 @@ router.post('/verify-otp/:id', validateInput(verifyOtpSchema), verifyOTP)
  *           schema:
  *             type: object
  *             required:
- *               - oldPassword
- *               - newPassword
+ *               - password
  *             properties:
- *               oldPassword:
- *                 type: string
- *               newPassword:
+ *               password:
  *                 type: string
  *     responses:
  *       200:

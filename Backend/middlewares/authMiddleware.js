@@ -287,7 +287,7 @@ export const createEventSchema = joi.object({
   preview: joi.string().trim().required().min(3).max(150),
   eventDate: joi.date().iso().required(),
   location: joi.string().trim().optional(),
-  targetGroups: joi.array().items(joi.number().min(2000)).optional(),
+  admissionYear: joi.array().items(joi.number().min(2000)).optional(),
   image: joi
     .string()
     .custom((value, helpers) => {
@@ -323,7 +323,7 @@ export const updateEventSchema = joi.object({
   description: joi.string().trim().min(10).optional(),
   eventDate: joi.date().iso().optional(),
   location: joi.string().trim().optional(),
-  targetGroups: joi.array().items(joi.number().min(2000)).optional(),
+  admissionYear: joi.array().items(joi.number().min(2000)).optional(),
   image: joi
     .string()
     .custom((value, helpers) => {
