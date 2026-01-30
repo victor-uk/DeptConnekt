@@ -5,6 +5,7 @@ import {
   generateTestToken,
   createTestLecturer,
   createTestStudent,
+  createTestAdmin,
   getAuthHeader
 } from '../helpers/testHelpers.js'
 import AssignmentSchema from '../../models/AssignmentSchema.js'
@@ -32,7 +33,9 @@ describe('Assignment Routes', () => {
     await clearDB()
     lecturer = await createTestLecturer({ status: 'approved' })
     student = await createTestStudent({ status: 'approved', admissionYear: 2021 })
-    adminToken = generateTestToken(new mongoose.Types.ObjectId(), 'admin')
+    const admin = await createTestAdmin()
+
+    adminToken = generateTestToken(admin._id, 'admin')
     lecturerToken = generateTestToken(lecturer._id, 'lecturer')
     studentToken = generateTestToken(student._id, 'student')
   })
@@ -128,7 +131,7 @@ describe('Assignment Routes', () => {
     })
 
     it('should paginate properly', async () => {
-      let ass= await AssignmentSchema.create({
+      let ass = await AssignmentSchema.create({
         ...assignmentData,
         title: 'Assignment 2',
         preview: 'This is a detailed description...',
@@ -137,7 +140,7 @@ describe('Assignment Routes', () => {
       })
       const res = await request(app)
         .get('/api/v1/assignments?limit=1&page=2')
-        .set(getAuthHeader(lecturerToken)) 
+        .set(getAuthHeader(lecturerToken))
 
       expect(res.status).toBe(200)
       expect(res.body.data.length).toBe(1)
@@ -214,7 +217,7 @@ describe('Assignment Routes', () => {
         createdBy: lecturer._id,
         createdByModel: 'Lecturer'
       })
-      
+
     })
 
     it('should allow admin/owner to update', async () => {

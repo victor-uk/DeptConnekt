@@ -5,6 +5,7 @@ import {
   generateTestToken,
   createTestLecturer,
   createTestStudent,
+  createTestAdmin,
   getAuthHeader
 } from '../helpers/testHelpers.js'
 import AnnouncementSchema from '../../models/AnnouncementSchema.js'
@@ -26,7 +27,9 @@ describe('Announcement Routes', () => {
     await clearDB()
     lecturer = await createTestLecturer({ status: 'approved' })
     student = await createTestStudent({ status: 'approved', admissionYear: 2021 })
-    adminToken = generateTestToken(new mongoose.Types.ObjectId(), 'admin')
+    const admin = await createTestAdmin()
+
+    adminToken = generateTestToken(admin._id, 'admin')
     lecturerToken = generateTestToken(lecturer._id, 'lecturer')
     studentToken = generateTestToken(student._id, 'student')
   })
@@ -86,10 +89,10 @@ describe('Announcement Routes', () => {
       createdBy: lecturer._id,
       createdByModel: 'Lecturer'
     })
-    
+
     const response = await request(app)
       .get('/api/v1/announcements')
-      .set(getAuthHeader(lecturerToken)) 
+      .set(getAuthHeader(lecturerToken))
 
     expect(response.status).toBe(200)
     expect(response.body.data.length).toBeGreaterThan(0)
@@ -101,7 +104,7 @@ describe('Announcement Routes', () => {
       body: 'Body',
       preview: 'Body',
       category: 'academic',
-      admissionYear: 2021, 
+      admissionYear: 2021,
       createdBy: lecturer._id,
       createdByModel: 'Lecturer'
     })
@@ -109,7 +112,7 @@ describe('Announcement Routes', () => {
     const response = await request(app)
       .get('/api/v1/announcements?category=academic')
       .set(getAuthHeader(studentToken))
-      
+
     expect(response.status).toBe(200)
     expect(response.body.data[0].category).toBe('academic')
   })

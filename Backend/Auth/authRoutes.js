@@ -13,9 +13,11 @@ import {
   regLecturerSchema,
   regStudentSchema,
   resetPasswordSchema,
-  validateInput,
   verifyOtpSchema,
-  verifyToken
+} from '../middlewares/schemaValidation.js'
+import {
+  verifyToken,
+  validateInput,
 } from '../middlewares/authMiddleware.js'
 
 const router = Router()

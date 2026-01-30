@@ -15,7 +15,7 @@ process.env.JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 describe('Auth Module', () => {
   beforeAll(async () => {
-    await connectDB() 
+    await connectDB()
   })
 
   afterAll(async () => {
@@ -157,7 +157,7 @@ describe('Auth Module', () => {
       expect(res.body.success).toBe(true)
       expect(res.body.data).toHaveProperty('token')
       console.log(res.body.data);
-      
+
       const decoded = jwt.verify(res.body.data.token, process.env.JWT_SECRET)
       expect(decoded.id).toBe(student.id)
       expect(decoded.role).toBe('student')
@@ -281,25 +281,25 @@ describe('Auth Module', () => {
     })
 
     it('should reject if token is invalid or expired', async () => {
-        const expiredToken = jwt.sign({ id: userId, tokenUser: userId }, process.env.JWT_SECRET, { expiresIn: '-1s' });
-        const res = await request(app)
-            .post(`/api/v1/auth/change-password/${userId}?role=student`)
-            .set('Authorization', `Bearer ${expiredToken}`)
-            .send({ password: newPassword });
+      const expiredToken = jwt.sign({ id: userId, tokenUser: userId }, process.env.JWT_SECRET, { expiresIn: '-1s' });
+      const res = await request(app)
+        .post(`/api/v1/auth/change-password/${userId}?role=student`)
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .send({ password: newPassword });
 
-        expect(res.statusCode).toBe(401);
-        expect(res.body.message).toBe('Token expired');
+      expect(res.statusCode).toBe(401);
+      expect(res.body.message).toBe('Token expired');
     });
 
     it('should reject if tokenUser does not match params.id', async () => {
-        const mismatchedToken = jwt.sign({ id: 'anotherId', tokenUser: 'anotherId' }, process.env.JWT_SECRET, { expiresIn: '10m' });
-        const res = await request(app)
-            .post(`/api/v1/auth/change-password/${userId}?role=student`)
-            .set('Authorization', `Bearer ${mismatchedToken}`)
-            .send({ password: newPassword });
+      const mismatchedToken = jwt.sign({ id: 'anotherId', tokenUser: 'anotherId' }, process.env.JWT_SECRET, { expiresIn: '10m' });
+      const res = await request(app)
+        .post(`/api/v1/auth/change-password/${userId}?role=student`)
+        .set('Authorization', `Bearer ${mismatchedToken}`)
+        .send({ password: newPassword });
 
-        expect(res.statusCode).toBe(403);
-        expect(res.body.message).toBe('Invalid token');
+      expect(res.statusCode).toBe(403);
+      expect(res.body.message).toBe('Invalid token');
     });
   })
 
@@ -359,30 +359,64 @@ describe('Auth Module', () => {
 
   // 7. authoriseRoles Middleware
   describe('authoriseRoles Middleware', () => {
-    const adminToken = jwt.sign({ id: new mongoose.Types.ObjectId(), role: 'admin' }, process.env.JWT_SECRET)
-    const lecturerToken = jwt.sign({ id: new mongoose.Types.ObjectId(), role: 'lecturer' }, process.env.JWT_SECRET)
-    const studentToken = jwt.sign({ id: new mongoose.Types.ObjectId(), role: 'student' }, process.env.JWT_SECRET)
     const testRoute = '/api/v1/lecturers' // A route protected by authoriseRoles
 
     it('should allow users whose roles match', async () => {
+      const lecturer = await LecturerSchema.create({
+        firstName: 'Auth',
+        lastName: 'Lecturer',
+        email: 'auth.lec@example.com',
+        password: 'password123',
+        lecturerID: 'AUTHLEC1',
+        status: 'approved',
+        role: 'lecturer'
+      })
+      const token = jwt.sign({ id: lecturer._id, role: 'lecturer' }, process.env.JWT_SECRET)
+
       const res = await request(app)
         .get(testRoute)
-        .set('Authorization', `Bearer ${lecturerToken}`)
+        .set('Authorization', `Bearer ${token}`)
       expect(res.statusCode).toBe(200)
     })
 
     it('should deny users whose role is not permitted', async () => {
+      const student = await StudentSchema.create({
+        firstName: 'Auth',
+        lastName: 'Student',
+        email: 'auth.stu@example.com',
+        password: 'password123',
+        matricNo: 'AUTHSTU1',
+        admissionYear: 2021,
+        status: 'approved',
+        role: 'student'
+      })
+      const token = jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET)
+
       const res = await request(app)
         .get(testRoute)
-        .set('Authorization', `Bearer ${studentToken}`)
+        .set('Authorization', `Bearer ${token}`)
       expect(res.statusCode).toBe(403)
       expect(res.body.message).toBe('Access denied')
     })
 
     it('should allow admin to access restricted routes', async () => {
+      // Create a user and manually set role to 'admin' (bypassing enum validation with updateOne)
+      const user = await StudentSchema.create({
+        firstName: 'Auth',
+        lastName: 'Admin',
+        email: 'auth.admin@example.com',
+        password: 'password123',
+        matricNo: 'AUTHADM1',
+        admissionYear: 2021,
+        status: 'approved'
+      })
+      await StudentSchema.updateOne({ _id: user._id }, { $set: { role: 'admin' } })
+
+      const token = jwt.sign({ id: user._id, role: 'admin' }, process.env.JWT_SECRET)
+
       const res = await request(app)
         .get(testRoute)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${token}`)
       expect(res.statusCode).toBe(200)
     })
   })

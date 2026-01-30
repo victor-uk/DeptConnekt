@@ -7,34 +7,34 @@ const studentSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: [true, "First name is required"],
-      trim: true,
+      trim: true
     },
     lastName: {
       type: String,
       required: [true, "Last name is required"],
-      trim: true,
+      trim: true
     },
     email: {
       type: String,
       required: [true, "Email is required"],
       unique: true,
-      lowercase: true,
+      lowercase: true
     },
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: 6,
-      select: false, // hide in queries
+      select: false
     },
     matricNo: {
       type: String,
       required: [true, "Matric number is required"],
-      unique: true,
+      unique: true
     },
     role: {
       type: String,
       enum: ["student", "studentAdmin"],
-      default: "student",
+      default: "student"
     },
     admissionYear: {
         type: Number,
@@ -54,7 +54,7 @@ const studentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      default: "pending"
     }
   },
   { timestamps: true }

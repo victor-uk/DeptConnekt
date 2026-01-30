@@ -5,6 +5,7 @@ import {
   generateTestToken,
   createTestLecturer,
   createTestStudent,
+  createTestAdmin,
   getAuthHeader
 } from '../helpers/testHelpers.js'
 import EventSchema from '../../models/EventSchema.js'
@@ -34,7 +35,9 @@ describe('Event Routes', () => {
     await clearDB()
     lecturer = await createTestLecturer({ status: 'approved' })
     student = await createTestStudent({ status: 'approved' })
-    adminToken = generateTestToken(new mongoose.Types.ObjectId(), 'admin')
+    const admin = await createTestAdmin()
+
+    adminToken = generateTestToken(admin._id, 'admin')
     lecturerToken = generateTestToken(lecturer._id, 'lecturer')
     studentToken = generateTestToken(student._id, 'student')
   })
@@ -108,7 +111,7 @@ describe('Event Routes', () => {
     })
 
     it('should return an empty array when no events exist', async () => {
-      await clearDB()
+      await EventSchema.deleteMany({})
       const res = await request(app)
         .get('/api/v1/events')
         .set(getAuthHeader(studentToken))

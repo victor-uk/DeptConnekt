@@ -11,6 +11,7 @@ import eventRoutes from "../Event/EventRoutes.js"
 import timetableRoutes from "../Timetable/timetableRoutes.js"
 import aiRoutes from "../Ai/aiRoutes.js"
 import { timeoutMiddleware, haltOnTimedout } from '../middlewares/timeoutMiddleware.js';
+import { verifyApprovedUser } from '../middlewares/authMiddleware.js';
 import mongoSanitise from 'express-mongo-sanitize'
 import { setupSwagger } from "./swagger.js";
 import { startJobs } from "../cron-jobs/post-archiver.js"
@@ -19,7 +20,9 @@ import { startJobs } from "../cron-jobs/post-archiver.js"
 const app = express()
 
 // cron jobs
-startJobs()
+if (process.env.NODE_ENV !== 'test') {
+    startJobs()
+}
 
 app.use(helmet())
 app.use(cors({

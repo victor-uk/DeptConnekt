@@ -1,11 +1,14 @@
 import { Router } from "express";
 import {
-  verifyToken,
-  authoriseRoles,
-  validateInput,
   createEventSchema,
   updateEventSchema,
-} from "../middlewares/authMiddleware.js";
+} from "../middlewares/schemaValidation.js";
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
+  validateInput,
+} from "../middlewares/authMiddleware.js";  
 import {
   createEvent,
   getEvents,
@@ -19,7 +22,7 @@ import {
 const router = Router({ mergeParams: true });
 
 // All event routes require a valid token
-router.use(verifyToken);
+router.use(verifyToken, verifyApprovedUser);
 
 /**
  * @swagger

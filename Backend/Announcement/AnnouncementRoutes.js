@@ -10,14 +10,17 @@ import {
 } from './AnnouncementController.js'
 import {
   announcementSchema,
-  authoriseRoles,
   updateAnnouncementSchema,
+} from '../middlewares/schemaValidation.js'
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
   validateInput,
-  verifyToken
 } from '../middlewares/authMiddleware.js'
 const router = Router({ mergeParams: true })
 
-router.use(verifyToken)
+router.use(verifyToken, verifyApprovedUser)
 /**
  * @swagger
  * /api/v1/announcements:

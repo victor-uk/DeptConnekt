@@ -1,11 +1,14 @@
 import { Router } from "express";
 import {
-  verifyToken,
-  authoriseRoles,
-  validateInput,
   createTimetableSchema,
   updateTimetableSchema,
   addClassSchema,
+} from "../middlewares/schemaValidation.js";
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
+  validateInput,
 } from "../middlewares/authMiddleware.js";
 import {
   createTimetable,
@@ -22,7 +25,7 @@ import {
 const router = Router({ mergeParams: true });
 
 // All timetable routes require a valid token
-router.use(verifyToken);
+router.use(verifyToken, verifyApprovedUser);
 
 const canCreateRoles = authoriseRoles({ roles: ["courseAdviser", "lecturer"] });
 const canModifyRoles = authoriseRoles({ resourceName: "timetable", own: true, roles: ["admin"] });

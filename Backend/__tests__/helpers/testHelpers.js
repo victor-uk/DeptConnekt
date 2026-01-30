@@ -57,16 +57,19 @@ export const createTestStudent = async (overrides = {}) => {
 }
 
 /**
- * Create test admin (lecturer with admin role - if you have admin model, update this)
- * For now, we'll use a lecturer with special status
+ * Create test admin
+ * We use a student account and manually update the role to 'admin' to bypass enum validation
  */
 export const createTestAdmin = async (overrides = {}) => {
-  return await createTestLecturer({
+  const admin = await createTestStudent({
     email: `admin${Date.now()}@test.com`,
-    lecturerID: `ADM${Date.now()}`,
-    role: 'lecturer', // Adjust based on your admin implementation
+    matricNo: `ADM${Date.now()}`,
+    status: 'approved',
     ...overrides
   })
+  // Manually update role to 'admin' in database
+  await StudentSchema.updateOne({ _id: admin._id }, { $set: { role: 'admin' } })
+  return await StudentSchema.findById(admin._id)
 }
 
 /**

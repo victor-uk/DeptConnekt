@@ -12,12 +12,15 @@ import {
   updateStudent
 } from './userController.js'
 import {
-  authoriseRoles,
   lecturerUpdateSchema,
   studentUpdateSchema,
   updateMeSchema,
+} from '../middlewares/schemaValidation.js'
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
   validateInput,
-  verifyToken
 } from '../middlewares/authMiddleware.js'
 import { parser, attachmentParser } from '../middlewares/uploadMiddleware.js'
 import LecturerSchema from '../models/LecturerSchema.js'
@@ -28,7 +31,7 @@ import { PermissionDeniedError } from '../utils/Error.js'
 const router = express.Router({ mergeParams: true })
 
 // verifying jwt
-router.use(verifyToken)
+router.use(verifyToken, verifyApprovedUser)
 
 // the parser.single('image') is used to parse the image file from the request
 // the image is uploaded to cloudinary and the url is returned
@@ -106,9 +109,9 @@ router.patch('/students/approve/:id', authoriseRoles({ roles: ['courseAdviser'] 
  *           schema:
  *             type: object
  *             properties:
- *               firstName:
+ *               email:
  *                 type: string
- *               lastName:
+ *               profileImg:
  *                 type: string
  *     responses:
  *       200:

@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
-  verifyToken,
-  authoriseRoles,
-  validateInput,
   createAssignmentSchema,
   updateAssignmentSchema,
+} from "../middlewares/schemaValidation.js";
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
+  validateInput,
 } from "../middlewares/authMiddleware.js";
 import {
   createAssignment,
@@ -19,7 +22,7 @@ import {
 const router = Router({ mergeParams: true });
 
 // verifyToken middleware
-router.use(verifyToken);
+router.use(verifyToken, verifyApprovedUser);
 
 // assignment routes
 /**

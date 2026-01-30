@@ -1,7 +1,5 @@
 import * as cron from "node-cron"
-import AnnouncementSchema from "../models/AnnouncementSchema"
-import AssignmentSchema from "../models/AssignmentSchema"
-import { resourceModel } from "../middlewares/authMiddleware";
+import { resourceModel } from "../middlewares/authMiddleware.js";
 
 export const sixtyDaysInMs = 1000 * 60 * 60 * 24 * 60;
 export const sixMonthsInMs = 1000 * 60 * 60 * 24 * 30 * 6;

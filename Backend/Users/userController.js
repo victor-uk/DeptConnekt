@@ -20,9 +20,6 @@ export const getMe = async (req, res) => {
   const user = await schema
     .findOne({ _id: id })
     .lean()
-  if (!user || user.status !== 'approved') {
-    throw new PermissionDeniedError('Access Denied')
-  }
   return res.status(StatusCodes.OK).json({
     success: true,
     message: 'Profile gotten',
@@ -40,9 +37,7 @@ export const updateMe = async (req, res) => {
   const { id, role } = req.user
   const schema = getSchema(role)
   const user = await schema.findOne({ _id: id })
-  if (!user || user.status !== 'approved') {
-    throw new PermissionDeniedError('Access Denied')
-  }
+  if (!user) throw new ResourceNotFoundError('User not found')
   if (email) user.email = email
   if (profileImg) user.profileImg = profileImg
   await user.save()
