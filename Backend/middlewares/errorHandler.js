@@ -4,21 +4,36 @@ import { ResourceNotFoundError } from '../utils/Error.js'
 
 // errorhandler middleware takes in 4 args
 export const errorHandler = (err, req, res, next) => {
-  if (err instanceof CustomError) {
-    return res
-      .status(err.errorCode)
-      .json({ success: false, message: err.message, stack: err.stack })
+  let statusCode = err.errorCode || StatusCodes.INTERNAL_SERVER_ERROR
+  let message = err.message || 'Something went wrong'
+
+  if (err.name === 'ValidationError') {
+    statusCode = StatusCodes.BAD_REQUEST
+    message = Object.values(err.errors)
+      .map(item => item.message)
+      .join(', ')
   }
 
-  const message = err?.message || 'Something went wrong'
-  console.error(err.stack)
-  return res
-    .status(StatusCodes.INTERNAL_SERVER_ERROR)
-    .json({ success: false, message: message, stack: err.stack })
+  if (err.name === 'CastError') {
+    statusCode = StatusCodes.NOT_FOUND
+    message = `Resource not found with id: ${err.value}`
+  }
+
+  console.error(`ERROR [${req.method} ${req.path}]: ${message}`)
+
+  if (statusCode === StatusCodes.INTERNAL_SERVER_ERROR || process.env.NODE_ENV !== 'production') {
+    console.error(err.stack)
+  }
+
+  return res.status(statusCode).json({
+    success: false,
+    message: message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+  })
 }
 
 export const notFound = (req, res, next) => {
-    throw new ResourceNotFoundError("Route not found")
+  throw new ResourceNotFoundError("Route not found")
 }
 
 

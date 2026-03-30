@@ -12,12 +12,15 @@ import {
   updateStudent
 } from './userController.js'
 import {
-  authoriseRoles,
   lecturerUpdateSchema,
   studentUpdateSchema,
   updateMeSchema,
+} from '../middlewares/schemaValidation.js'
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
   validateInput,
-  verifyToken
 } from '../middlewares/authMiddleware.js'
 import { parser, attachmentParser } from '../middlewares/uploadMiddleware.js'
 import LecturerSchema from '../models/LecturerSchema.js'
@@ -28,7 +31,7 @@ import { PermissionDeniedError } from '../utils/Error.js'
 const router = express.Router({ mergeParams: true })
 
 // verifying jwt
-router.use(verifyToken)
+router.use(verifyToken, verifyApprovedUser)
 
 // the parser.single('image') is used to parse the image file from the request
 // the image is uploaded to cloudinary and the url is returned
@@ -106,9 +109,9 @@ router.patch('/students/approve/:id', authoriseRoles({ roles: ['courseAdviser'] 
  *           schema:
  *             type: object
  *             properties:
- *               firstName:
+ *               email:
  *                 type: string
- *               lastName:
+ *               profileImg:
  *                 type: string
  *     responses:
  *       200:
@@ -127,6 +130,23 @@ router.route('/me').get(getMe).patch(validateInput(updateMeSchema), updateMe)
  *     responses:
  *       200:
  *         description: List of lecturers
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: ["lecturer", "courseAdviser"]
+ *         description: Filter by role
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
  */
 router
   .route('/lecturers')
@@ -143,6 +163,13 @@ router
  *     responses:
  *       200:
  *         description: List of students
+ *     parameters:
+ *       - in: query
+ *         name: admissionYear
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Filter students by admission year
  */
 router
   .route('/students')

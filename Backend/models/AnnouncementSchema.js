@@ -76,7 +76,6 @@ const announcementSchema = new mongoose.Schema(
 
 // TTL index for expired documents
 announcementSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-announcementSchema.index({ })
 
 /**
  * Archive announcement (soft removal)

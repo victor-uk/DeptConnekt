@@ -5,6 +5,7 @@ import {
   generateTestToken,
   createTestLecturer,
   createTestStudent,
+  createTestAdmin,
   getAuthHeader
 } from '../helpers/testHelpers.js'
 import TimetableSchema from '../../models/TimetableSchema.js'
@@ -31,7 +32,9 @@ describe('Timetable Routes', () => {
     await clearDB()
     lecturer = await createTestLecturer({ status: 'approved' })
     student = await createTestStudent({ status: 'approved', admissionYear: 2021 })
-    adminToken = generateTestToken(new mongoose.Types.ObjectId(), 'admin')
+    const admin = await createTestAdmin()
+
+    adminToken = generateTestToken(admin._id, 'admin')
     lecturerToken = generateTestToken(lecturer._id, 'lecturer')
     studentToken = generateTestToken(student._id, 'student')
   })
@@ -86,7 +89,7 @@ describe('Timetable Routes', () => {
 
       expect(res.status).toBe(200)
       expect(res.body.data.length).toBe(0)
-    
+
     })
   })
 

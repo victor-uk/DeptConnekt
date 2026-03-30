@@ -5,6 +5,7 @@ import {
   generateTestToken,
   createTestLecturer,
   createTestStudent,
+  createTestAdmin,
   getAuthHeader
 } from '../helpers/testHelpers.js'
 import LecturerSchema from '../../models/LecturerSchema.js'
@@ -80,7 +81,8 @@ describe('User Routes', () => {
 
   it('should get all lecturers for authorized user', async () => {
     await createTestLecturer({ status: 'approved' })
-    const adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const adminToken = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .get('/api/v1/lecturers')
@@ -92,7 +94,8 @@ describe('User Routes', () => {
 
   it('should get lecturer by ID', async () => {
     const lecturer = await createTestLecturer({ status: 'approved' })
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'student')
+    const student = await createTestStudent({ status: 'approved' })
+    const token = generateTestToken(student._id.toString(), 'student')
 
     const response = await request(app)
       .get(`/api/v1/lecturers/${lecturer._id}`)
@@ -104,7 +107,8 @@ describe('User Routes', () => {
 
   it('should return 404 for non-existent lecturer', async () => {
     const fakeId = new mongoose.Types.ObjectId()
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const token = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .get(`/api/v1/lecturers/${fakeId}`)
@@ -116,7 +120,8 @@ describe('User Routes', () => {
   it('should get students by admission year', async () => {
     await createTestStudent({ admissionYear: 2020 })
     await createTestStudent({ admissionYear: 2020 })
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const token = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .get('/api/v1/students?admissionYear=2020')
@@ -127,7 +132,8 @@ describe('User Routes', () => {
   })
 
   it('should require admissionYear query parameter', async () => {
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const token = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .get('/api/v1/students')
@@ -138,7 +144,8 @@ describe('User Routes', () => {
 
   it('should get student by ID for authorized user', async () => {
     const student = await createTestStudent()
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const token = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .get(`/api/v1/students/${student._id}`)
@@ -150,7 +157,8 @@ describe('User Routes', () => {
 
   it('should approve lecturer as admin', async () => {
     const lecturer = await createTestLecturer({ status: 'pending' })
-    const adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const adminToken = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .patch(`/api/v1/lecturers/approve/${lecturer._id}`)
@@ -163,7 +171,8 @@ describe('User Routes', () => {
 
   it('should deny lecturer approval for non-admin', async () => {
     const lecturer = await createTestLecturer({ status: 'pending' })
-    const token = generateTestToken(new mongoose.Types.ObjectId().toString(), 'lecturer')
+    const otherLecturer = await createTestLecturer({ status: 'approved' })
+    const token = generateTestToken(otherLecturer._id.toString(), 'lecturer')
 
     const response = await request(app)
       .patch(`/api/v1/lecturers/approve/${lecturer._id}`)
@@ -174,7 +183,8 @@ describe('User Routes', () => {
 
   it('should update lecturer as admin', async () => {
     const lecturer = await createTestLecturer()
-    const adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const adminToken = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .put(`/api/v1/lecturers/${lecturer._id}`)
@@ -187,7 +197,8 @@ describe('User Routes', () => {
 
   it('should delete lecturer as admin', async () => {
     const lecturer = await createTestLecturer()
-    const adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const adminToken = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .delete(`/api/v1/lecturers/${lecturer._id}`)
@@ -200,7 +211,8 @@ describe('User Routes', () => {
 
   it('should delete student as admin', async () => {
     const student = await createTestStudent()
-    const adminToken = generateTestToken(new mongoose.Types.ObjectId().toString(), 'admin')
+    const admin = await createTestAdmin()
+    const adminToken = generateTestToken(admin._id.toString(), 'admin')
 
     const response = await request(app)
       .delete(`/api/v1/students/${student._id}`)

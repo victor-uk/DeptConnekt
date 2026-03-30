@@ -1,11 +1,14 @@
 import { Router } from "express";
 import {
-  verifyToken,
-  authoriseRoles,
-  validateInput,
   createTimetableSchema,
   updateTimetableSchema,
   addClassSchema,
+} from "../middlewares/schemaValidation.js";
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
+  validateInput,
 } from "../middlewares/authMiddleware.js";
 import {
   createTimetable,
@@ -22,7 +25,7 @@ import {
 const router = Router({ mergeParams: true });
 
 // All timetable routes require a valid token
-router.use(verifyToken);
+router.use(verifyToken, verifyApprovedUser);
 
 const canCreateRoles = authoriseRoles({ roles: ["courseAdviser", "lecturer"] });
 const canModifyRoles = authoriseRoles({ resourceName: "timetable", own: true, roles: ["admin"] });
@@ -62,6 +65,38 @@ const canModifyRoles = authoriseRoles({ resourceName: "timetable", own: true, ro
  *     tags: [Timetables]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: admissionYear
+ *         schema:
+ *           type: number
+ *         description: Filter by admission year
+ *       - in: query
+ *         name: semester
+ *         schema:
+ *           type: string
+ *           enum: ["First", "Second"]
+ *         description: Filter by semester
+ *       - in: query
+ *         name: level
+ *         schema:
+ *           type: string
+ *           enum: ["100", "200", "300", "400", "500"]
+ *         description: Filter by level
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: archived
+ *         schema:
+ *           type: boolean
  *     responses:
  *       200:
  *         description: List of timetables
@@ -214,6 +249,18 @@ router
  *       - in: path
  *         name: classId
  *         required: true
+ *       - in: query
+ *         name: dayName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Name of the day (e.g., Monday)
+ *       - in: query
+ *         name: courseCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Code of the course to remove
  *     responses:
  *       200:
  *         description: Class removed

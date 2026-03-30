@@ -29,8 +29,8 @@ export const createEvent = async (req, res) => {
   roles.forEach((r) => getIO().to(`role:${r}`).emit("newEvent", populated));
 
   // Emit to target admission years
-  if (populated.targetGroups && populated.targetGroups.length > 0) {
-    populated.targetGroups.forEach((year) => {
+  if (populated.admissionYear && populated.admissionYear.length > 0) {
+    populated.admissionYear.forEach((year) => {
       getIO().to(`admissionYear:${year}`).emit("newEvent", populated);
     });
   }
@@ -43,13 +43,13 @@ export const createEvent = async (req, res) => {
 };
 
 export const getEvents = async (req, res) => {
-  const { page, limit, title, location, archived, targetGroups, eventDate } = req.query;
+  const { page, limit, title, location, archived, admissionYear, eventDate } = req.query;
   const { skip, queryLimit } = paginator(page, limit);
 
   const filter = {};
   if (title) filter.title = { $regex: title, $options: "i" };
   if (location) filter.location = { $regex: location, $options: "i" };
-  if (targetGroups) filter.targetGroups = targetGroups;
+  if (admissionYear) filter.admissionYear = admissionYear;
   if (eventDate) {
     if (isNaN(new Date(eventDate).getTime())) {
       throw new BadRequestError("Invalid event date");
@@ -111,8 +111,8 @@ export const updateEvent = async (req, res) => {
   // Emit updates
   const roles = ["lecturer", "courseAdviser", "admin"];
   roles.forEach((r) => getIO().to(`role:${r}`).emit("updateEvent", event));
-  if (event.targetGroups && event.targetGroups.length > 0) {
-    event.targetGroups.forEach((year) => {
+  if (event.admissionYear && event.admissionYear.length > 0) {
+    event.admissionYear.forEach((year) => {
       getIO().to(`admissionYear:${year}`).emit("updateEvent", event);
     });
   }
@@ -133,8 +133,8 @@ export const deleteEvent = async (req, res) => {
   getIO().to("role:admin").emit("deleteEvent", { id });
   getIO().to(`user:${event.createdBy}`).emit("deleteEvent", { id });
 
-  if (event.targetGroups && event.targetGroups.length > 0) {
-    event.targetGroups.forEach((year) => {
+  if (event.admissionYear && event.admissionYear.length > 0) {
+    event.admissionYear.forEach((year) => {
       getIO().to(`admissionYear:${year}`).emit("deleteEvent", { id });
     });
   }
@@ -156,8 +156,8 @@ export const archiveEvent = async (req, res) => {
   getIO().to("role:admin").emit("updateEvent", event);
   getIO().to(`user:${event.createdBy}`).emit("updateEvent", event);
 
-  if (event.targetGroups && event.targetGroups.length > 0) {
-    event.targetGroups.forEach((year) => {
+  if (event.admissionYear && event.admissionYear.length > 0) {
+    event.admissionYear.forEach((year) => {
       getIO().to(`admissionYear:${year}`).emit("deleteEvent", { id: event._id });
     });
   }
@@ -175,8 +175,8 @@ export const unarchiveEvent = async (req, res) => {
   getIO().to("role:admin").emit("updateEvent", event);
   getIO().to(`user:${event.createdBy._id || event.createdBy}`).emit("updateEvent", event);
 
-  if (event.targetGroups && event.targetGroups.length > 0) {
-    event.targetGroups.forEach((year) => {
+  if (event.admissionYear && event.admissionYear.length > 0) {
+    event.admissionYear.forEach((year) => {
       getIO().to(`admissionYear:${year}`).emit("newEvent", event);
     });
   }

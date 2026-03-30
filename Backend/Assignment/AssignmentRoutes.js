@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
-  verifyToken,
-  authoriseRoles,
-  validateInput,
   createAssignmentSchema,
   updateAssignmentSchema,
+} from "../middlewares/schemaValidation.js";
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
+  validateInput,
 } from "../middlewares/authMiddleware.js";
 import {
   createAssignment,
@@ -19,7 +22,7 @@ import {
 const router = Router({ mergeParams: true });
 
 // verifyToken middleware
-router.use(verifyToken);
+router.use(verifyToken, verifyApprovedUser);
 
 // assignment routes
 /**
@@ -69,6 +72,29 @@ router.use(verifyToken);
  *     responses:
  *       200:
  *         description: List of assignments
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by assignment title (search)
+ *       - in: query
+ *         name: admissionYear
+ *         schema:
+ *           type: integer
+ *         description: Filter by admission year
  */
 router
   .route("/assignments")

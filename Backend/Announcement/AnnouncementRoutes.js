@@ -10,14 +10,17 @@ import {
 } from './AnnouncementController.js'
 import {
   announcementSchema,
-  authoriseRoles,
   updateAnnouncementSchema,
+} from '../middlewares/schemaValidation.js'
+import {
+  verifyToken,
+  verifyApprovedUser,
+  authoriseRoles,
   validateInput,
-  verifyToken
 } from '../middlewares/authMiddleware.js'
 const router = Router({ mergeParams: true })
 
-router.use(verifyToken)
+router.use(verifyToken, verifyApprovedUser)
 /**
  * @swagger
  * /api/v1/announcements:
@@ -64,6 +67,35 @@ router.use(verifyToken)
  *     responses:
  *       200:
  *         description: List of announcements
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: timeline
+ *         schema:
+ *           type: integer
+ *         description: Filter announcements from the last N days
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by title (search)
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: ["general", "academic", "event", "alert", "other"]
+ *         description: Filter by category
  */
 router
   .route('/announcements')
