@@ -87,7 +87,7 @@ This means records are first **archived** (soft-retired) before being permanentl
 
 | Resource | Active Period | Archive Trigger | TTL Deletion | Notes |
 |-----------|----------------|----------------|---------------|-------|
-| **Announcements** | 30 days | After 30 days | 6 months post-archive | Kept visible in “Archived Announcements” for reference. |
+| **Announcements** | 30 days | After 60 days | 6 months post-archive | Kept visible in “Archived Announcements” for reference. |
 | **Assignments** | Until due date + 14 days | When due date + 14 days passes | 6 months post-archive | Students cannot view or after archive. |
 | **Events** | Until `endDate` | When `endDate` passes | 6 months post-archive | Archived automatically after event concludes. |
 | **Verification Tokens / OTPs** | Minutes | Immediate | 5–10 minutes | Pure TTL — no archiving. |

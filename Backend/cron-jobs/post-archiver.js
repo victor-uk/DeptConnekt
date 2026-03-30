@@ -1,4 +1,4 @@
-import * as cron from "node-cron"
+import cron from "node-cron"
 import { resourceModel } from "../middlewares/authMiddleware.js";
 
 export const sixtyDaysInMs = 1000 * 60 * 60 * 24 * 60;
@@ -23,42 +23,51 @@ export const archivePosts = async (dueDateField, model, cutoffInMs, expiryInMs) 
   console.log(`${model}s archived successfully`);
 }
 
-const startAnnouncementJobs = (retries = 0) => {
+const startAnnouncementJobs = () => {
   cron.schedule(" 0 0 * * *", async () => {
-    try {
-      await archivePosts("createdAt", "announcement", sixtyDaysInMs, sixMonthsInMs)
-    } catch (error) {
-      console.log(error)
-      if (retries < 3) {
-        setTimeout(() => startAnnouncementJobs(retries + 1), 5000);
+    const attemptArchive = async (retries = 0) => {
+      try {
+        await archivePosts("createdAt", "announcement", sixtyDaysInMs, sixMonthsInMs)
+      } catch (error) {
+        console.log(error)
+        if (retries < 3) {
+          setTimeout(() => attemptArchive(retries + 1), 5000);
+        }
       }
-    }
+    };
+    await attemptArchive();
   })
 }
 
-const startAssignmentJobs = (retries = 0) => {
+const startAssignmentJobs = () => {
   cron.schedule(" 0 0 * * *", async () => {
-    try {
-      await archivePosts("deadline", "assignment", fourteenDaysInMs, sixMonthsInMs)
-    } catch (error) {
-      console.log(error)
-      if (retries < 3) {
-        setTimeout(() => startAssignmentJobs(retries + 1), 5000);
+    const attemptArchive = async (retries = 0) => {
+      try {
+        await archivePosts("deadline", "assignment", fourteenDaysInMs, sixMonthsInMs)
+      } catch (error) {
+        console.log(error)
+        if (retries < 3) {
+          setTimeout(() => attemptArchive(retries + 1), 5000);
+        }
       }
-    }
+    };
+    await attemptArchive();
   })
 }
 
-const startEventJobs = (retries = 0) => {
+const startEventJobs = () => {
   cron.schedule(" 0 0 * * *", async () => {
-    try {
-      await archivePosts("eventDate", "event", fourteenDaysInMs, sixMonthsInMs)
-    } catch (error) {
-      console.log(error)
-      if (retries < 3) {
-        setTimeout(() => startEventJobs(retries + 1), 5000);
+    const attemptArchive = async (retries = 0) => {
+      try {
+        await archivePosts("eventDate", "event", fourteenDaysInMs, sixMonthsInMs)
+      } catch (error) {
+        console.log(error)
+        if (retries < 3) {
+          setTimeout(() => attemptArchive(retries + 1), 5000);
+        }
       }
-    }
+    };
+    await attemptArchive();
   })
 }
 

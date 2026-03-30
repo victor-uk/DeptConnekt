@@ -1,4 +1,6 @@
 import mongoose from 'mongoose'
+import { jest } from '@jest/globals'
+import cron from 'node-cron'
 import { connectDB, closeDB, clearDB } from '../setup/testSetup.js'
 import {
   archivePosts,
@@ -133,6 +135,75 @@ describe('Archive Posts Integration Tests', () => {
 
       expect(archivedEvent.archived).toBe(true);
       expect(activeEvent.archived).toBe(false);
+    });
+  });
+
+  describe('Retry Logic', () => {
+    let cronSpy;
+    let setTimeoutSpy;
+    let updateManySpy;
+
+    beforeEach(() => {
+      // Mock timers to manually advance timeouts
+      jest.useFakeTimers();
+
+      // We spy on cron.schedule to capture the registered callback
+      cronSpy = jest.spyOn(cron, 'schedule').mockImplementation((pattern, callback) => {
+        // do not actually schedule in node-cron, just record the call
+      });
+
+      // Spy on setTimeout to verify retry is scheduled
+      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      jest.restoreAllMocks();
+    });
+
+    it('should retry job when an error occurs during archiving', async () => {
+      const { startJobs } = await import('../../cron-jobs/post-archiver.js');
+
+      // Make the database update fail to trigger the catch block
+      updateManySpy = jest.spyOn(AnnouncementSchema, 'updateMany').mockRejectedValue(new Error('Archiving Failed'));
+
+      // Call startJobs which triggers startAnnouncementJobs, etc.
+      startJobs();
+
+      // cron.schedule should be called 3 times (Announcement, Assignment, Event)
+      expect(cronSpy).toHaveBeenCalledTimes(3);
+
+      // Get the job callback for announcements (first call to cron.schedule)
+      const announcementJob = cronSpy.mock.calls[0][1];
+
+      // Execute the job (this mimics cron triggering it at midnight)
+      await announcementJob();
+
+      // Because it fails, it should catch the error and schedule a retry via setTimeout
+      expect(updateManySpy).toHaveBeenCalledTimes(1);
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(setTimeoutSpy.mock.calls[0][1]).toBe(5000); // 5 seconds delay
+
+      // Make the DB succeed THIS time
+      updateManySpy.mockResolvedValue({ acknowledged: true, modifiedCount: 1 });
+
+      // Fast forward the timer to execute the retry callback 
+      jest.advanceTimersByTime(5000);
+
+      // We need to allow the promise microtasks to flush
+      // since attemptArchive is async and calls updateManySpy
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // updateManySpy should be called a second time now
+      expect(updateManySpy).toHaveBeenCalledTimes(2);
+
+      // And it should have succeeded, so no more retries
+      // This means setTimeout shouldn't be called a second time
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+
+      // And cronSpy shouldn't have been called a 4th time
+      expect(cronSpy).toHaveBeenCalledTimes(3);
     });
   });
 });
