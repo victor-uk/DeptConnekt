@@ -42,9 +42,6 @@ app.use(timeoutMiddleware);
 
 setupSwagger(app);
 
-app.get("/", (req, res) => {
-    res.send("DeptConnekt is loading")
-})
 app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1", userRoutes)
 app.use("/api/v1", announcementRoutes)
