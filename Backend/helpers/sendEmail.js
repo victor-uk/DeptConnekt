@@ -24,6 +24,6 @@ export const emailConfirmationHelper = async (id, email, name) => {
   try {
     await brevo.transactionalEmails.sendTransacEmail(mailOptions);
   } catch (err) {
-    throw new InternalServerError("Brevo Error: " + err)
+    throw new InternalServerError(err)
   }
 }
