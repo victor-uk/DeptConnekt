@@ -26,7 +26,7 @@ export const registerLecturer = async (req, res) => {
       password,
       lecturerID
     })
-    await emailConfirmationHelper(lecturer._id.toString())
+    await emailConfirmationHelper(lecturer._id.toString(), email)
     await lecturer.save()
   }
 
@@ -58,7 +58,7 @@ export const registerStudent = async (req, res) => {
       admissionYear,
       matricNo
     })
-    await emailConfirmationHelper(student.id)
+    await emailConfirmationHelper(student._id.toString(), email)
     await student.save()
   }
 
@@ -121,7 +121,7 @@ export const resetPassword = async (req, res) => {
   if (!user) {
     await fetch('https://httpbin.org/delay/5').then(r => r.json())
   } else {
-    await emailConfirmationHelper(user._id)
+    await emailConfirmationHelper(user._id.toString(), email)
   }
 
   return res.status(StatusCodes.ACCEPTED).json({

@@ -3,20 +3,25 @@ import generateOTP from '../utils/generateOtp.js'
 import TokenSchema from '../models/TokenSchema.js'
 import { expiryDate } from '../config/defaults.js'
 
+const host = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_HOST : process.env.EMAIL_HOST
+const port = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PORT : process.env.EMAIL_PORT
+const user = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_USER : process.env.EMAIL_USER
+const password = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PASSWORD : process.env.EMAIL_PASSWORD
+
 const transport = nodemailer.createTransport({
-  host: 'sandbox.smtp.mailtrap.io',
-  port: 2525,
+  host: host,
+  port: port,
   auth: {
-    user: '7ddc82dead69ee',
-    pass: 'a872cabffb460e'
+    user: user,
+    pass: password
   }
 })
 
-export const emailConfirmationHelper = async id => {
+export const emailConfirmationHelper = async (id, email) => {
   let otp = generateOTP()
   const mailOptions = {
-    from: '"DeptConnect" <no-reply@deptconnect.com>',
-    to: 'student@example.com',
+    from: `DeptConnekt" <${process.env.EMAIL_FROM}>`,
+    to: email,
     subject: 'Verify otp',
     text: `Your otp is ${otp}`
   }
