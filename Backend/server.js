@@ -5,11 +5,6 @@ import connectDB from "./config/connectDB.js";
 import app from "./config/app.js";
 import { initServer } from "./config/connectWebsocket.js";
 
-// Disable console.log in production to avoid noisy logs
-if (process.env.NODE_ENV === "production") {
-  console.log = () => { };
-}
-
 //create http server
 const server = createServer(app);
 
