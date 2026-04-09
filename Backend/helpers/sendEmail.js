@@ -3,10 +3,10 @@ import generateOTP from '../utils/generateOtp.js'
 import TokenSchema from '../models/TokenSchema.js'
 import { expiryDate } from '../config/defaults.js'
 
-const host = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_HOST : process.env.EMAIL_HOST
-const port = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PORT : process.env.EMAIL_PORT
-const user = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_USER : process.env.EMAIL_USER
-const password = process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PASSWORD : process.env.EMAIL_PASSWORD
+const host = process.env.EMAIL_HOST//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_HOST : process.env.EMAIL_HOST
+const port = process.env.EMAIL_PORT//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PORT : process.env.EMAIL_PORT
+const user = process.env.EMAIL_USER//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_USER : process.env.EMAIL_USER
+const password = process.env.EMAIL_PASSWORD//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PASSWORD : process.env.EMAIL_PASSWORD
 
 const transport = nodemailer.createTransport({
   host: host,
@@ -33,8 +33,6 @@ export const emailConfirmationHelper = async (id, email) => {
   try {
     await transport.sendMail(mailOptions);
   } catch (err) {
-    console.error(err.message); // Human-readable message
-    console.log(err.code);    // e.g., 'ECONNECTION', 'EAUTH'
-    console.log(err.response); // SMTP server response
+    console.log(err); // Human-readable message
   }
 }

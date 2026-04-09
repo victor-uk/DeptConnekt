@@ -17,7 +17,7 @@ export const registerLecturer = async (req, res) => {
   const lecturerExists = await LecturerSchema.findOne({ email: email }).lean()
   if (lecturerExists) {
     // to simulate a network delay so that hackers wont be able to detect an existing email
-    await fetch('https://httpbin.org/delay/5').then(r => r.json())
+    await fetch('https://httpbin.org/delay/1').then(r => r.json())
   } else {
     const lecturer = new LecturerSchema({
       firstName,
@@ -48,7 +48,7 @@ export const registerStudent = async (req, res) => {
     req.body
   const studentExists = await StudentSchema.findOne({ email }).lean()
   if (studentExists) {
-    await fetch('https://httpbin.org/delay/5').then(r => r.json())
+    await fetch('https://httpbin.org/delay/1').then(r => r.json())
   } else {
     const student = new StudentSchema({
       firstName,
@@ -119,7 +119,7 @@ export const resetPassword = async (req, res) => {
   const schema = role === 'lecturer' ? LecturerSchema : StudentSchema
   const user = await schema.findOne({ email }).lean()
   if (!user) {
-    await fetch('https://httpbin.org/delay/5').then(r => r.json())
+    await fetch('https://httpbin.org/delay/0').then(r => r.json())
   } else {
     await emailConfirmationHelper(user._id.toString(), email)
   }
