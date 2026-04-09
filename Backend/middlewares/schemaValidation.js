@@ -2,10 +2,12 @@ import joi from 'joi'
 import { validateUrl } from '../helpers/urlValidator.js'
 import { checkYearIsValid } from '../helpers/checkValidYear.js'
 
+let pwdRegex = `^[a-zA-Z0-9!@#\\$%\\^\\&*\\)\\(+=._-]{6,30}$`
+
 export const regLecturerSchema = joi.object({
   firstName: joi.string().min(3).max(20).required(),
   lastName: joi.string().min(3).max(20).required(),
-  password: joi.string().pattern(new RegExp('^[a-zA-Z0-9]{6,20}$')).required(),
+  password: joi.string().pattern(new RegExp(pwdRegex)).required(),
   repeatPassword: joi.string().valid(joi.ref('password')), // compares password and repeated password
   email: joi
     .string()
@@ -36,7 +38,7 @@ export const loginSchema = joi.object({
     .string()
     .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
     .required(),
-  password: joi.string().pattern(new RegExp('^[a-zA-Z0-9]{6,20}$')).required()
+  password: joi.string().pattern(new RegExp(pwdRegex)).required()
   //role: joi.string().valid('lecturer', 'student').required()
 })
 
@@ -54,7 +56,7 @@ export const verifyOtpSchema = joi.object({
 })
 
 export const changePasswordSchema = joi.object({
-  password: joi.string().pattern(new RegExp('^[a-zA-Z0-9]{6,20}$')).required()
+  password: joi.string().pattern(new RegExp(pwdRegex)).required()
 })
 
 /**
