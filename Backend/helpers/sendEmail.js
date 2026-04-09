@@ -1,38 +1,29 @@
-import nodemailer from 'nodemailer'
+import { BrevoClient } from '@getbrevo/brevo'
 import generateOTP from '../utils/generateOtp.js'
 import TokenSchema from '../models/TokenSchema.js'
 import { expiryDate } from '../config/defaults.js'
+import { InternalServerError } from '../utils/Error.js'
 
-const host = process.env.EMAIL_HOST//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_HOST : process.env.EMAIL_HOST
-const port = process.env.EMAIL_PORT//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PORT : process.env.EMAIL_PORT
-const user = process.env.EMAIL_USER//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_USER : process.env.EMAIL_USER
-const password = process.env.EMAIL_PASSWORD//process.env.NODE_ENV === "development" ? process.env.TEST_EMAIL_PASSWORD : process.env.EMAIL_PASSWORD
+let expiryDateInNL = `10 minutes`
 
-const transport = nodemailer.createTransport({
-  host: host,
-  port: port,
-  auth: {
-    user: user,
-    pass: password
-  }
-})
-
-export const emailConfirmationHelper = async (id, email) => {
+export const emailConfirmationHelper = async (id, email, name) => {
+  const brevo = new BrevoClient({ apiKey: process.env.EMAIL_API_KEY })
   let otp = generateOTP()
   const mailOptions = {
-    from: `DeptConnekt" <${process.env.EMAIL_FROM}>`,
-    to: email,
-    subject: 'Verify otp',
-    text: `Your otp is ${otp}`
+    subject: `DeptConnekt: Account Verification for ${name}`,
+    htmlContent: `Hey ${name}, your otp is ${otp}. It expires in ${expiryDateInNL}`,
+    sender: { name: 'DeptConnekt', email: `${process.env.EMAIL_FROM}` },
+    to: [{ email: email, name: name }],
   }
+
   await TokenSchema.create({
     userId: id,
     token: otp,
     expiresAt: expiryDate
   })
   try {
-    await transport.sendMail(mailOptions);
+    await brevo.transactionalEmails.sendTransacEmail(mailOptions);
   } catch (err) {
-    console.log(err); // Human-readable message
+    throw new InternalServerError("Brevo Error: " + err)
   }
 }

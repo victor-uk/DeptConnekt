@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { BadRequestError, PermissionDeniedError } from '../utils/Error.js'
+import { BadRequestError, PermissionDeniedError, ResourceNotFoundError } from '../utils/Error.js'
 import { generateJwt } from '../utils/generateJwt.js'
 import StudentSchema from '../models/StudentSchema.js'
 import LecturerSchema from '../models/LecturerSchema.js'
@@ -16,6 +16,7 @@ export const registerLecturer = async (req, res) => {
   const { firstName, lastName, email, password, lecturerID } = req.body
   const lecturerExists = await LecturerSchema.findOne({ email: email }).lean()
   if (lecturerExists) {
+    if (process.env.NODE_ENV === "development") throw new ResourceNotFoundError("User already exists")
     // to simulate a network delay so that hackers wont be able to detect an existing email
     await fetch('https://httpbin.org/delay/1').then(r => r.json())
   } else {
@@ -26,7 +27,7 @@ export const registerLecturer = async (req, res) => {
       password,
       lecturerID
     })
-    await emailConfirmationHelper(lecturer._id.toString(), email)
+    await emailConfirmationHelper(lecturer._id.toString(), email, firstName)
     await lecturer.save()
   }
 
@@ -58,7 +59,7 @@ export const registerStudent = async (req, res) => {
       admissionYear,
       matricNo
     })
-    await emailConfirmationHelper(student._id.toString(), email)
+    await emailConfirmationHelper(student._id.toString(), email, firstName)
     await student.save()
   }
 
@@ -119,9 +120,9 @@ export const resetPassword = async (req, res) => {
   const schema = role === 'lecturer' ? LecturerSchema : StudentSchema
   const user = await schema.findOne({ email }).lean()
   if (!user) {
-    await fetch('https://httpbin.org/delay/0').then(r => r.json())
+    await fetch('https://httpbin.org/delay/2').then(r => r.json())
   } else {
-    await emailConfirmationHelper(user._id.toString(), email)
+    await emailConfirmationHelper(user._id.toString(), email, firstName)
   }
 
   return res.status(StatusCodes.ACCEPTED).json({
