@@ -26,7 +26,13 @@ try {
   console.log(error)
 }
 
-await connectDB(url);
+try {
+  await connectDB(url);
+} catch (error) {
+  console.error("FATAL: could not connect to MongoDB", error);
+  process.exit(1);
+}
+
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });
